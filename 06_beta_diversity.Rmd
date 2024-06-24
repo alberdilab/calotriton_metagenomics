@@ -33,7 +33,7 @@ beta_q1f <- genome_counts_filt %>%
   hillpair(., q = 1, dist = dist)
 ```
 
-### Permanova
+## Permanova
 
 ```{r permanova, comment="", message=FALSE, warning=FALSE, eval=FALSE}
 #Richness
@@ -80,7 +80,7 @@ adonis2(beta_q1f$C ~ Origin,
         tt()
 ```
 
-### Richness diversity plot
+## Richness diversity plot
 
 ```{r beta_div_nmds_richness_plot, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
 beta_q0n$S %>%
@@ -108,7 +108,7 @@ beta_q0n$S %>%
 ```
 
 
-### Neutral diversity plot
+## Neutral diversity plot
 
 ```{r beta_div_nmds_neutral_plot, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
 beta_q1n$S %>%
@@ -135,7 +135,7 @@ beta_q1n$S %>%
     labs(shape="Temperature treatment")
 ```
 
-### Phylogenetic diversity plot
+## Phylogenetic diversity plot
 
 ```{r beta_div_nmds_phylo_plot, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
 beta_q1p$S %>%
@@ -162,7 +162,7 @@ beta_q1p$S %>%
     labs(shape="Temperature treatment")
 ```
 
-### Functional diversity plot
+## Functional diversity plot
 
 ```{r beta_div_nmds_funct_plot, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
 beta_q1f$S %>%
