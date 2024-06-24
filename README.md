@@ -15,3 +15,4 @@ library(webshot)
 
 render_book(input = ".", output_format = "bookdown::gitbook", output_dir = "docs")
 ```
+
