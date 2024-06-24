@@ -2,6 +2,7 @@
 
 ```{r load_data_community}
 load("data/data.Rdata")
+#sample_metadata <- read_csv("data/sample_metadata.csv")
 ```
 
 ## Taxonomy overview 
@@ -18,7 +19,7 @@ genome_counts_filt %>%
   ggplot(., aes(x=sample,y=count, fill=phylum, group=phylum)) + #grouping enables keeping the same sorting of taxonomic units
     geom_bar(stat="identity", colour="white", linewidth=0.1) + #plot stacked bars with white borders
     scale_fill_manual(values=phylum_colors) +
-    facet_nested(. ~ environment + longitude,  scales="free") + #facet per day and treatment
+    facet_nested(. ~ region + environment + treatment,  scales="free") + #facet per day and treatment
     guides(fill = guide_legend(ncol = 1)) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
           axis.title.x = element_blank(),
@@ -29,6 +30,17 @@ genome_counts_filt %>%
           axis.line = element_line(linewidth = 0.5, linetype = "solid", colour = "black")) +
    labs(fill="Phylum",y = "Relative abundance",x="Samples")
 ```
+**Number of bacteria phyla**
+
+```{r phyla, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+genome_metadata %>% 
+  filter(domain == "d__Bacteria")%>%
+  dplyr::select(phylum) %>%
+  unique() %>%
+  pull() %>%
+  length()
+```
+
 
 ### Phylum relative abundances
 
@@ -38,13 +50,17 @@ phylum_summary <- genome_counts_filt %>%
   pivot_longer(-genome, names_to = "sample", values_to = "count") %>%
   left_join(sample_metadata, by = join_by(sample == sample)) %>%
   left_join(genome_metadata, by = join_by(genome == genome)) %>%
-  group_by(sample,phylum) %>%
+  group_by(sample,phylum,region, environment,treatment) %>%
   summarise(relabun=sum(count))
-
+```
+```{r taxonomy_phylum_summary_total, warning=FALSE, comments="", message=FALSE}
 phylum_summary %>%
     group_by(phylum) %>%
-    summarise(mean=mean(relabun, na.rm=T),sd=sd(relabun, na.rm=T)) %>%
-    arrange(-mean) %>%
+    summarise(total_mean=mean(relabun*100, na.rm=T),
+              total_sd=sd(relabun*100, na.rm=T))  %>%
+    mutate(total=str_c(round(total_mean,2),"±",round(total_sd,2))) %>% 
+    arrange(-total_mean) %>% 
+    dplyr::select(phylum,total) %>% 
     tt()
 ```
 
