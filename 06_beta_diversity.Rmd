@@ -4,7 +4,7 @@
 load("data/data.Rdata")
 ```
 
-```{r beta_div, comment="", message=FALSE, warning=FALSE, eval=FALSE}
+```{r beta_div, comment="", message=FALSE, warning=FALSE}
 beta_q0n <- genome_counts_filt %>%
   column_to_rownames(., "genome") %>%
   filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
