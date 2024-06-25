@@ -15,7 +15,11 @@ sample_metadata <- read_tsv("data/DMB0156_metadata.tsv.gz") %>%
         longitude > -1.5 ~ "high",
         TRUE ~ NA_character_ # Default case if no match
       ))
+```
 
+```{r load_new_sample_metadata, warning=FALSE, comments="", message=FALSE, eval=FALSE}
+sample_metadata <- read_csv("data/sample_metadata.csv") %>% 
+  filter(!sample %in% c("EHI02067", "EHI02105", "EHI02079", "EHI02097")) #remove repeated samples
 ```
 
 ### Read counts
@@ -104,7 +108,12 @@ genome_counts_filt <- read_counts_filt %>%
 ### Distill annotations into GIFTs 
 
 ```{r distill_annotations, warning=FALSE, comments="", message=FALSE, eval=FALSE}
-genome_gifts <- distill(genome_annotations,GIFT_db,genomecol=2,annotcol=c(9,10,19), verbosity=F)
+genome_gifts_raw <- distill(genome_annotations,GIFT_db,genomecol=2,annotcol=c(9,10,19), verbosity=F)
+```
+```{r distill_annotations_filt, warning=FALSE, comments="", message=FALSE, eval=FALSE}
+genome_counts_filt_func <- genome_counts_filt[genome_counts_filt$genome %in% rownames(genome_gifts),]
+genome_gifts <- genome_gifts_raw[genome_counts_filt_func$genome,]
+genome_gifts <- genome_gifts[, colSums(genome_gifts != 0) > 0]
 ```
 
 ## Prepare color scheme
@@ -121,6 +130,11 @@ phylum_colors <- read_tsv("https://raw.githubusercontent.com/earthhologenome/EHI
     pull(colors, name=phylum)
 ```
 
+```{r get_colors, warning=FALSE, comments="", message=FALSE, eval=FALSE}
+altitude_colors<- c("#429ef5","#a8c3f0","#f56c42","#f29c80")
+treatment_colors <- c("#429ef5","#f56042")
+```
+
 ## Wrap working objects
 
 All working objects are wrapped into a single Rdata object to facilitate downstream usage.
@@ -132,7 +146,10 @@ save(sample_metadata,
      genome_counts, 
      genome_counts_filt, 
      genome_tree,
-     genome_gifts, 
+     genome_gifts_raw, 
+     genome_gifts,
      phylum_colors,
+     altitude_colors,
+     treatment_colors,
      file = "data/data.Rdata")
 ```

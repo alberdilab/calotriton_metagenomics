@@ -65,7 +65,9 @@ alpha_div %>%
   ggplot(aes(y = value, x = treatment, group=treatment, color=treatment, fill=treatment)) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE)+
-  facet_nested(. ~ region + environment,  scales="free") + #facet per day and treatment
+  scale_color_manual(values=treatment_colors)+
+  scale_fill_manual(values=treatment_colors) +
+  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
   coord_cartesian(xlim = c(1, NA)) +
   theme_classic() +
   theme(
@@ -84,7 +86,9 @@ alpha_div %>%
   ggplot(aes(y = value, x = treatment, group=treatment, color=treatment, fill=treatment)) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE)+
-  facet_nested(. ~ region + environment,  scales="free") + #facet per day and treatment
+  scale_color_manual(values=treatment_colors)+
+  scale_fill_manual(values=treatment_colors) +
+  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
   coord_cartesian(xlim = c(1, NA)) +
   theme_classic() +
   theme(
@@ -104,7 +108,9 @@ alpha_div %>%
   ggplot(aes(y = value, x = treatment, group=treatment, color=treatment, fill=treatment)) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE)+
-  facet_nested(. ~ region + environment,  scales="free") + #facet per day and treatment
+  scale_color_manual(values=treatment_colors)+
+  scale_fill_manual(values=treatment_colors) +
+  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
   coord_cartesian(xlim = c(1, NA)) +
   theme_classic() +
   theme(
@@ -123,8 +129,10 @@ alpha_div %>%
   filter(metric=="functional") %>%
   ggplot(aes(y = value, x = treatment, group=treatment, color=treatment, fill=treatment)) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
-  geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE) + 
-  facet_nested(. ~ region + environment,  scales="free") + #facet per day and treatment
+  geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE) +
+  scale_color_manual(values=treatment_colors)+
+  scale_fill_manual(values=treatment_colors) + 
+  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
   coord_cartesian(xlim = c(1, NA)) +
   theme_classic() +
   theme(

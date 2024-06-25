@@ -2,9 +2,6 @@
 
 ```{r load_data_beta}
 load("data/data.Rdata")
-
-sample_metadata$location<- paste(sample_metadata$region,sample_metadata$environment, sep="_")
-#sample_metadata$all<- paste(sample_metadata$location,sample_metadata$treatment, sep="_")
 ```
 
 ```{r beta_div, comment="", message=FALSE, warning=FALSE, eval=FALSE}
@@ -88,12 +85,13 @@ beta_q0n$S %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
-  group_by(location, treatment) %>%
+  group_by(altitude, treatment) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(aes(x = NMDS1, y = NMDS2, color = location, fill = location, shape = as.factor(treatment))) +
+  ggplot(aes(x = NMDS1, y = NMDS2, color = altitude, fill = altitude, shape = as.factor(treatment))) +
   geom_point(size = 4) +
+  scale_color_manual(values = altitude_colors) +
   geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
   theme(
     axis.title = element_text(size = 12, face = "bold"),
@@ -105,6 +103,8 @@ beta_q0n$S %>%
     legend.position = "right", legend.box = "vertical"
     ) +
     labs(shape="Temperature treatment")
+#+geom_text(aes(label = specimen), size=3)
+
 ```
 
 
@@ -116,12 +116,13 @@ beta_q1n$S %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
-  group_by(location, treatment) %>%
+  group_by(altitude, treatment) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(aes(x = NMDS1, y = NMDS2, color = location, fill = location, shape = as.factor(treatment))) +
+  ggplot(aes(x = NMDS1, y = NMDS2, color = altitude, fill = altitude, shape = as.factor(treatment))) +
   geom_point(size = 4) +
+  scale_color_manual(values = altitude_colors)+
   geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
   theme(
     axis.title = element_text(size = 12, face = "bold"),
@@ -143,12 +144,13 @@ beta_q1p$S %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
-  group_by(location, treatment) %>%
+  group_by(altitude, treatment) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(aes(x = NMDS1, y = NMDS2, color = location, fill = location, shape = as.factor(treatment))) +
+  ggplot(aes(x = NMDS1, y = NMDS2, color = altitude, fill = altitude, shape = as.factor(treatment))) +
   geom_point(size = 4) +
+  scale_color_manual(values = altitude_colors)+
   geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
   theme(
     axis.title = element_text(size = 12, face = "bold"),
@@ -170,12 +172,13 @@ beta_q1f$S %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
-  group_by(location, treatment) %>%
+  group_by(altitude, treatment) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(aes(x = NMDS1, y = NMDS2, color = location, fill = location, shape = as.factor(treatment))) +
+  ggplot(aes(x = NMDS1, y = NMDS2, color = altitude, fill = altitude, shape = as.factor(treatment))) +
   geom_point(size = 4) +
+  scale_color_manual(values = altitude_colors) +
   geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
   theme(
     axis.title = element_text(size = 12, face = "bold"),
