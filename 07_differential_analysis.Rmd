@@ -63,7 +63,7 @@ structural_zeros <- genome_counts_filt %>%
 # #  mutate_at(vars(phylum), ~ str_replace(., "[dpcofgs]__", "")) %>%
 #   right_join(structural_zeros, by=join_by(phylum == phylum)) %>%
 #   dplyr::select(phylum, colors) %>%
-# #  mutate(colors = str_c(colors, "80"))  %>% #add 80% alpha
+#   mutate(colors = str_c(colors, "80"))  %>% #add 80% alpha
 #   unique() %>%
 #   arrange(phylum) %>%
 #   dplyr::select(colors) %>%
@@ -72,19 +72,21 @@ structural_zeros <- genome_counts_filt %>%
 structural_zeros %>%
     mutate(average = ifelse(present == "low", average * -1, average)) %>%
   mutate(genome = factor(genome, levels = genome))%>% #convert TJ1 genome counts to negative 
-    ggplot(., aes(x=average, y=forcats::fct_rev(genome), fill=phylum)) +
+    ggplot(., aes(x=average, y=forcats::fct_reorder(genome,average), fill=phylum)) +
   geom_col()+
 #      geom_jitter(height = 0.01, size=3) +
       geom_vline(xintercept=0) + 
       xlim(-max(structural_zeros$average)-3,max(structural_zeros$average)+3) +
       scale_fill_manual(values=phylum_colors) +
-      geom_text(aes(-max(structural_zeros$average), 25), label = "Only present\nin low", color="#666666") +
-      geom_text(aes(max(structural_zeros$average), 25), label = "Only present\nin high", color="#666666") +
+      geom_text(aes(-20, 25), label = "Only present\nin low", color="#666666") +
+      geom_text(aes(30, 25), label = "Only present\nin high", color="#666666") +
      theme(
           panel.background = element_blank(),
+        axis.text.y = element_text(size = 6),
           axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"))+
       labs(y="Mags",x="Genome counts") + 
       guides(col=guide_legend("Phylum"))
+
 ```
 
 ## Enrichment analysis between high and low altitude: Ancombc2
@@ -182,7 +184,7 @@ tax_color <- merge(tax_table, colors_alphabetic, by="phylum")%>%
 	dplyr::select(colors) %>%
 	pull()
 ```
-```{r ancombc_rand_plot_phy, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=10, fig.width=8, fig.fullwidth=TRUE, eval=FALSE}
+```{r ancombc_rand_plot_phy, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=10, fig.width=8, fig.fullwidth=TRUE}
 ancombc_rand_table_mag%>%
       mutate(genome=factor(genome,levels=ancombc_rand_table_mag$genome)) %>%
 ggplot(., aes(x=lfc_environmentlow, y=forcats::fct_reorder(genome,lfc_environmentlow), fill=phylum)) + #forcats::fct_rev()
@@ -287,7 +289,7 @@ tax_color <- merge(tax_table, colors_alphabetic, by="phylum")%>%
 	dplyr::select(colors) %>%
 	pull()
 ```
-```{r ancombc_rand_plot_mag, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=10, fig.width=8, fig.fullwidth=TRUE, eval=FALSE}
+```{r ancombc_rand_plot_mag, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=10, fig.width=8, fig.fullwidth=TRUE}
 ancombc_rand_table_mag_Struc%>%
       mutate(genome=factor(genome,levels=ancombc_rand_table_mag_Struc$genome)) %>%
 ggplot(., aes(x=lfc_environmentlow, y=forcats::fct_reorder(genome,lfc_environmentlow), fill=phylum)) + #forcats::fct_rev()
