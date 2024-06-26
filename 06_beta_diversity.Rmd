@@ -4,26 +4,47 @@
 load("data/data.Rdata")
 ```
 
+EHI02625 sample has been removed because otherwise permutest analysis was significant
 ```{r beta_div, comment="", message=FALSE, warning=FALSE}
 beta_q0n <- genome_counts_filt %>%
+  select(-EHI02625) %>% 
   column_to_rownames(., "genome") %>%
   filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
   select_if(~!all(. == 0)) %>%
   hillpair(., q = 0)
 
 beta_q1n <- genome_counts_filt %>%
+  select(-EHI02625) %>%
   column_to_rownames(., "genome") %>%
   filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
   select_if(~!all(. == 0)) %>%
   hillpair(., q = 1)
 
+
+genome_counts_filt_beta <- genome_counts_filt %>%
+  select(-EHI02625) %>%
+  column_to_rownames(., "genome") %>%
+  filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
+  select_if(~!all(. == 0))%>%
+  rownames_to_column(., "genome")
+
+genome_tree <- keep.tip(genome_tree, tip=genome_counts_filt_beta$genome) # keep only MAG tips
 beta_q1p <- genome_counts_filt %>%
+  select(-EHI02625) %>%
   column_to_rownames(., "genome") %>%
   filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
   select_if(~!all(. == 0)) %>%
   hillpair(., q = 1, tree = genome_tree)
 
+genome_gifts1 <- genome_gifts[genome_counts_filt_beta$genome,]
+genome_gifts1 <- genome_gifts1[, colSums(genome_gifts1 != 0) > 0]
+
+dist <- genome_gifts1 %>%
+  to.elements(., GIFT_db) %>%
+  traits2dist(., method = "gower")
+
 beta_q1f <- genome_counts_filt %>%
+  select(-EHI02625) %>%
   column_to_rownames(., "genome") %>%
   filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
   select_if(~!all(. == 0)) %>%
@@ -31,48 +52,42 @@ beta_q1f <- genome_counts_filt %>%
 ```
 
 ## Permanova
-
 ```{r permanova, comment="", message=FALSE, warning=FALSE, eval=FALSE}
 #Richness
-betadisper(beta_q0n$C, sample_metadata$location) %>% permutest(., pairwise = TRUE) 
-adonis2(beta_q0n$S ~ treatment, 
+sample_metadata<- sample_metadata %>% filter(sample!="EHI02625")
+
+betadisper(beta_q0n$S, sample_metadata$environment) %>% permutest(.) 
+adonis2(beta_q0n$S ~ environment+river, 
         data = sample_metadata %>% arrange(match(sample,labels(beta_q0n$S))), 
-        permutations = 999, 
-        strata = sample_metadata %>% arrange(match(sample,labels(beta_q0n$S))) %>% pull(location)) %>%
+        permutations = 999) %>%
         broom::tidy() %>%
         tt()
-
-sample_metadata_row<- column_to_rownames(sample_metadata, "sample") 
-sample_metadata_row <- sample_metadata_row[labels(beta_q0n$S), ]
-pairwise.adonis2(beta_q0n$S ~ all, data=sample_metadata_row, perm = 999)
-
+```
+```{r permanova_neutral, comment="", message=FALSE, warning=FALSE, eval=FALSE}
 #Neutral diversity
-betadisper(beta_q1n$C, sample_metadata$Origin) %>% permutest(., pairwise = TRUE) 
-adonis2(beta_q1n$C ~ Origin, 
-        data = sample_metadata %>% arrange(match(sample,labels(beta_q1n$C))), 
-        permutations = 999, 
-        strata = sample_metadata %>% arrange(match(sample,labels(beta_q1n$C))) %>% pull(Location)) %>%
+betadisper(beta_q1n$S, sample_metadata$environment) %>% permutest(.) 
+adonis2(beta_q1n$S ~ environment+river, 
+        data = sample_metadata %>% arrange(match(sample,labels(beta_q1n$S))), 
+        permutations = 999) %>%
         broom::tidy() %>%
         tt()
-sample_metadata_row<- column_to_rownames(sample_metadata, "sample") 
-sample_metadata_row <- sample_metadata_row[labels(beta_q0n$S), ]
-pairwise.adonis2(beta_q1n$S ~ all, data=sample_metadata_row, perm = 999)
-
+```
+```{r permanova_phylo, comment="", message=FALSE, warning=FALSE, eval=FALSE}
 #Phylogenetic diversity
-betadisper(beta_q1p$C, sample_metadata$Origin) %>% permutest(., pairwise = TRUE) 
-adonis2(beta_q1p$C ~ Origin, 
-        data = sample_metadata %>% arrange(match(sample,labels(beta_q1p$C))), 
-        permutations = 999, 
-        strata = sample_metadata %>% arrange(match(sample,labels(beta_q1p$C))) %>% pull(Location)) %>%
+betadisper(beta_q1p$S, sample_metadata$environment) %>% permutest(.) 
+adonis2(beta_q1p$S ~ environment+river, 
+        data = sample_metadata %>% arrange(match(sample,labels(beta_q1p$S))), 
+        permutations = 999) %>%
         broom::tidy() %>%
         tt()
+```
 
+```{r permanova_func, comment="", message=FALSE, warning=FALSE, eval=FALSE}
 #Functional diversity
-betadisper(beta_q1f$C, sample_metadata$Origin) %>% permutest(., pairwise = TRUE) 
-adonis2(beta_q1f$C ~ Origin, 
-        data = sample_metadata %>% arrange(match(sample,labels(beta_q1f$C))), 
-        permutations = 999, 
-        strata = sample_metadata %>% arrange(match(sample,labels(beta_q1f$C))) %>% pull(Location)) %>%
+betadisper(beta_q1f$S, sample_metadata$environment) %>% permutest(.) 
+adonis2(beta_q1f$S ~ environment+river, 
+        data = sample_metadata %>% arrange(match(sample,labels(beta_q1f$S))), 
+        permutations = 999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -102,11 +117,35 @@ beta_q0n$S %>%
     legend.title = element_text(size = 12),
     legend.position = "right", legend.box = "vertical"
     ) +
-    labs(shape="Temperature treatment")
-#+geom_text(aes(label = specimen), size=3)
+    labs(shape="Temperature treatment")+geom_text_repel(aes(label = sample), size=3)
 
 ```
 
+```{r beta_div_nmds_richness_plot1, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
+beta_q0n$S %>%
+  vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
+  group_by(environment) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = NMDS1, y = NMDS2, color = environment, fill = environment, shape = as.factor(river))) + 
+  geom_point(size = 4) +
+  scale_color_manual(values = treatment_colors) +
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    panel.background = element_blank(),
+    axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right", legend.box = "vertical"
+    ) +
+    labs(shape="Temperature treatment")
+```
 
 ## Neutral diversity plot
 
@@ -136,6 +175,31 @@ beta_q1n$S %>%
     labs(shape="Temperature treatment")
 ```
 
+```{r beta_div_nmds_neutral_plot2, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
+beta_q1n$S %>%
+  vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
+  group_by(environment) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = NMDS1, y = NMDS2, color = environment, fill = environment, shape = as.factor(river))) +
+  geom_point(size = 4) +
+  scale_color_manual(values = treatment_colors) +
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    panel.background = element_blank(),
+    axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right", legend.box = "vertical"
+    ) +
+    labs(shape="Temperature treatment")
+```
 ## Phylogenetic diversity plot
 
 ```{r beta_div_nmds_phylo_plot, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
@@ -151,6 +215,31 @@ beta_q1p$S %>%
   ggplot(aes(x = NMDS1, y = NMDS2, color = altitude, fill = altitude, shape = as.factor(treatment))) +
   geom_point(size = 4) +
   scale_color_manual(values = altitude_colors)+
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    panel.background = element_blank(),
+    axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right", legend.box = "vertical"
+    ) +
+    labs(shape="Temperature treatment")+geom_text_repel(aes(label = sample), size=3)
+```
+```{r beta_div_nmds_phylo_plot2, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
+beta_q1p$S %>%
+  vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
+  group_by(environment) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = NMDS1, y = NMDS2, color = environment, fill = environment, shape = as.factor(river))) +
+  geom_point(size = 4) +
+  scale_color_manual(values = treatment_colors) +
   geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
   theme(
     axis.title = element_text(size = 12, face = "bold"),
@@ -179,6 +268,32 @@ beta_q1f$S %>%
   ggplot(aes(x = NMDS1, y = NMDS2, color = altitude, fill = altitude, shape = as.factor(treatment))) +
   geom_point(size = 4) +
   scale_color_manual(values = altitude_colors) +
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    panel.background = element_blank(),
+    axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right", legend.box = "vertical"
+    ) +
+    labs(shape="Temperature treatment")+geom_text_repel(aes(label = sample), size=3)
+```
+
+```{r beta_div_nmds_funct_plot2, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
+beta_q1f$S %>%
+  vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
+  group_by(environment) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = NMDS1, y = NMDS2, color = environment, fill = environment, shape = as.factor(river))) +
+  geom_point(size = 4) +
+  scale_color_manual(values = treatment_colors) +
   geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9) +
   theme(
     axis.title = element_text(size = 12, face = "bold"),

@@ -62,12 +62,12 @@ alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
   left_join(., sample_metadata, by = join_by(sample == sample)) %>%
   filter(metric=="richness") %>%
-  ggplot(aes(y = value, x = treatment, group=treatment, color=treatment, fill=treatment)) +
+  ggplot(aes(y = value, x = river, group=river, color=environment, fill=environment)) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE)+
   scale_color_manual(values=treatment_colors)+
   scale_fill_manual(values=treatment_colors) +
-  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
+ # facet_nested(. ~ river,  scales="free") + #facet per day and treatment
   coord_cartesian(xlim = c(1, NA)) +
   theme_classic() +
   theme(
@@ -83,12 +83,12 @@ alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
   left_join(., sample_metadata, by = join_by(sample == sample)) %>%
   filter(metric=="neutral") %>%
-  ggplot(aes(y = value, x = treatment, group=treatment, color=treatment, fill=treatment)) +
+  ggplot(aes(y = value, x = river, group=river, color=environment, fill=environment)) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE)+
   scale_color_manual(values=treatment_colors)+
   scale_fill_manual(values=treatment_colors) +
-  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
+#  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
   coord_cartesian(xlim = c(1, NA)) +
   theme_classic() +
   theme(
@@ -105,12 +105,12 @@ alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
   left_join(., sample_metadata, by = join_by(sample == sample)) %>%
   filter(metric=="phylogenetic") %>%
-  ggplot(aes(y = value, x = treatment, group=treatment, color=treatment, fill=treatment)) +
+  ggplot(aes(y = value, x = river, group=river, color=environment, fill=environment)) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE)+
   scale_color_manual(values=treatment_colors)+
   scale_fill_manual(values=treatment_colors) +
-  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
+ # facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
   coord_cartesian(xlim = c(1, NA)) +
   theme_classic() +
   theme(
@@ -127,12 +127,12 @@ alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
   left_join(., sample_metadata, by = join_by(sample == sample)) %>%
   filter(metric=="functional") %>%
-  ggplot(aes(y = value, x = treatment, group=treatment, color=treatment, fill=treatment)) +
+  ggplot(aes(y = value, x = river, group=river, color=environment, fill=environment)) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE) +
   scale_color_manual(values=treatment_colors)+
   scale_fill_manual(values=treatment_colors) + 
-  facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
+ # facet_nested(. ~ environment+river,  scales="free") + #facet per day and treatment
   coord_cartesian(xlim = c(1, NA)) +
   theme_classic() +
   theme(
@@ -145,4 +145,47 @@ alpha_div %>%
 
 ```
 
+## Mixed models
 
+```{r rich_MM, comment="", message=FALSE, warning=FALSE}
+alpha_div_meta <- alpha_div %>%
+  left_join(sample_metadata, by = join_by(sample == sample))
+
+Model_neutral <- lme(fixed = neutral ~ altitude, data = alpha_div_meta,
+               random = ~ 1 | river)
+Model_neutral <- lme(fixed = neutral ~ environment, data = alpha_div_meta,
+               random = ~ 1 | river)
+Model_neutral<- lm(formula = neutral ~ environment+river, data = alpha_div_meta) 
+
+summary(Model_neutral)
+```
+
+```{r neutral_MM, comment="", message=FALSE, warning=FALSE}
+Model_neutral_random <- lme(fixed = neutral ~ environment, data = alpha_div_meta,
+               random = ~ 1 | river)
+summary(Model_neutral_random)
+
+Model_neutral<- lm(formula = neutral ~ environment+river, data = alpha_div_meta) 
+
+summary(Model_neutral)
+```
+
+```{r phylo_MM, comment="", message=FALSE, warning=FALSE}
+Model_phylogenetic_random <- lme(fixed = phylogenetic ~ environment, data = alpha_div_meta,
+               random = ~ 1 | river)
+summary(Model_phylogenetic_random)
+
+Model_phylogenetic<- lm(formula = phylogenetic ~ environment+river, data = alpha_div_meta) 
+
+summary(Model_phylogenetic)
+```
+
+```{r funct_MM, comment="", message=FALSE, warning=FALSE}
+Model_functional_random <- lme(fixed = functional ~ environment, data = alpha_div_meta,
+               random = ~ 1 | river)
+summary(Model_functional_random)
+
+Model_functional<- lm(formula = functional ~ environment+river, data = alpha_div_meta) 
+
+summary(Model_functional)
+```
