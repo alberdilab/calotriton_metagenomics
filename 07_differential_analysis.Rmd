@@ -1,3 +1,4 @@
+# Differential abundance
 
 ```{r load_data_mag_filtdamr_diffe, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 load("data/data.Rdata")
@@ -25,7 +26,7 @@ physeq_all = phyloseq(count_phy, TAX, sample_info_tab_phy, tree)
 ```
 
 
-# Structural zeros
+## Structural zeros
 
 ```{r struct_zero, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 low_samples <- sample_metadata %>% 
@@ -86,7 +87,7 @@ structural_zeros %>%
       guides(col=guide_legend("Phylum"))
 ```
 
-## Enrichment analysis between Domestic/Feral
+## Enrichment analysis between high and low altitude: Ancombc2
 
 ```{r zero_phylo, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 #phyloseq object considering structual zeros
@@ -111,12 +112,7 @@ physeq_genome_filtered_clr <- microbiome::transform(physeq_genome_filtered, 'clr
 
 ```
 
-
-
-## Ancombc2
-
 ### MAG
-#### Type of pond
 
 ```{r ancom_rand_pond, comment="", echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 set.seed(1234) #set seed for reproducibility
@@ -232,7 +228,7 @@ ancom_rand_output$res %>%
 #dev.off()
 ```
 
-## Controling structural components in Ancombc
+#### Controling structural components in Ancombc
 ```{r ancom_rand_season, comment="", echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 set.seed(1234) #set seed for reproducibility
 ancom_rand_output_mag_Struc = ancombc2(data = physeq_all, 
@@ -336,7 +332,7 @@ ancom_rand_output_mag_Struc$res %>%
 #dev.off()
 ```
 
-#### Phylum level
+### Phylum level
 
 ```{r ancom_phylum, comment="", echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 ancom_rand_output_phylum = ancombc2(data = physeq_genome_filtered, 
@@ -373,7 +369,7 @@ ancom_rand_output_phylum$res %>%
   dplyr::arrange(p_environmentlow) 
 ```
 
-#### Family level
+### Family level
 ```{r ancom_family, comment="", echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 ancom_rand_output_family = ancombc2(data = physeq_genome_filtered, 
                   assay_name = "counts", 
@@ -408,7 +404,7 @@ ancom_rand_output_family$res %>%
   dplyr::arrange(p_environmentlow) 
 ```
 
-#### Genera
+### Genera
 ```{r ancom_genera, comment="", echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 ancom_rand_output_gen = ancombc2(data = physeq_genome_filtered, 
                   assay_name = "counts", 

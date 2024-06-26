@@ -40,11 +40,10 @@ permanova
 richness-diversity-plot
 neutral-diversity-plot
 functional-diversity-plot
+differential-abundance
 structural-zeros
-enrichment-analysis-between-domesticferal
-ancombc2
+enrichment-analysis-between-high-and-low-altitude-ancombc2
 mag
-type-of-pond
 controling-structural-components-in-ancombc
 phylum-level
 family-level
