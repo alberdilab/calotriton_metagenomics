@@ -28,7 +28,7 @@ genome_counts_filt_beta <- genome_counts_filt %>%
   select_if(~!all(. == 0))%>%
   rownames_to_column(., "genome")
 
-genome_tree <- keep.tip(genome_tree, tip=genome_counts_filt_beta$genome) # keep only MAG tips
+genome_tree <- keep.tip(genome_tree, tip=genome_counts_filt_beta$genome)
 beta_q1p <- genome_counts_filt %>%
   select(-EHI02625) %>%
   column_to_rownames(., "genome") %>%
