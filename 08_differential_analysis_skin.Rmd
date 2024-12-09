@@ -1,4 +1,4 @@
-# Differential abundance
+# Skin microbiota: Differential abundance analysis
 
 ```{r load_data_mag_filtdamr_diffe_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 load("data/skin/data.Rdata")
@@ -87,6 +87,7 @@ structural_zeros %>%
       guides(col=guide_legend("Phylum"))
 
 ```
+
 
 ## MAGs in different locations and shared among locations
 

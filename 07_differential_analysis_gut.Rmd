@@ -1,4 +1,4 @@
-# Differential abundance
+# Gut microbiota: Differential abundance analysis
 
 ```{r load_data_mag_filtdamr_diffe, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 load("data/gut/data.Rdata")
@@ -93,6 +93,7 @@ structural_zeros %>%
       guides(col=guide_legend("Phylum"))
 
 ```
+
 ## MAGs in different locations and shared among locations
 
 ```{r chart1, comment="", echo=FALSE, message=FALSE, warning=FALSE}
@@ -297,6 +298,7 @@ ancom_rand_output_mag_Struc = ancombc2(data = physeq_all,
                   trend_control = NULL)
 
 ```
+
 ```{r ancom_rand1, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 taxonomy <- data.frame(physeq_genome_filtered@tax_table) %>%
   rownames_to_column(., "taxon")%>%

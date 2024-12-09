@@ -1,5 +1,5 @@
 
-# Differential abundance analysis: functional
+# Skin microbiota: functional analysis
 
 ```{r skin_load_data_func,comment="", echo=FALSE, message=FALSE, warning=FALSE}
 load("data/skin/data.Rdata")
@@ -236,7 +236,7 @@ element_gift_names <- element_gift_filt%>%
   left_join(., sample_metadata[c(1,10)], by = join_by(sample == sample))
 
 
-colNames <- names(element_gift_names)[2:29]
+colNames <- names(element_gift_names)[2:58]
 for(i in colNames){
   plt <- ggplot(element_gift_names, aes(x=environment, y=.data[[i]], color = environment, fill=environment)) +
     geom_boxplot(alpha = 0.2, outlier.shape = NA, width = 0.3, show.legend = FALSE) +
@@ -252,7 +252,7 @@ for(i in colNames){
 print(plt)
 }
 ```
-```{r skin_commun_wilcox_elem_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=6, fig.width=12, fig.fullwidth=TRUE, eval=FALSE}
+```{r skin_commun_wilcox_elem_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=10, fig.width=12, fig.fullwidth=TRUE, eval=FALSE}
 difference_table %>%
   ggplot(aes(x=forcats::fct_reorder(Function,Difference), y=Difference, fill=group_color)) + 
   geom_col() +
@@ -270,7 +270,7 @@ difference_table %>%
   ylab("Mean difference")+
   labs(fill="Elevation")
 ```
-```{r skin_plot3, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=6, fig.width=14, fig.fullwidth=TRUE}
+```{r skin_plot3, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=12, fig.fullwidth=TRUE}
 
 uniqueGIFT <- unique(GIFT_db[c(2,3,4,5,6)])
 

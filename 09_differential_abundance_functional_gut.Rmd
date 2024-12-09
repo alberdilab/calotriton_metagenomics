@@ -1,5 +1,5 @@
 
-# Differential abundance analysis: functional
+# Gut microbiota: functional analysis
 
 ```{r load_data_func,comment="", echo=FALSE, message=FALSE, warning=FALSE}
 load("data/gut/data.Rdata")
@@ -273,7 +273,7 @@ difference_table %>%
   ylab("Mean difference")+
   labs(fill="Elevation")
 ```
-```{r plot3, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=6, fig.width=14, fig.fullwidth=TRUE}
+```{r plot3, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=14, fig.fullwidth=TRUE}
 
 uniqueGIFT <- unique(GIFT_db[c(2,3,4,5,6)])
 
@@ -314,7 +314,6 @@ function_gift <- GIFTs_functions_community %>%
 ```{r commun_wilcox_func, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 unique_funct_db<- GIFT_db[c(3,4,5)] %>% 
   distinct(Code_function, .keep_all = TRUE)
-
 
 significant_functional <- function_gift %>%
     pivot_longer(-c(sample,environment), names_to = "trait", values_to = "value") %>%
