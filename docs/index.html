@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>AlberdiLab | Aizpurua et al. 2024</title>
   <meta name="description" content="&lt;p&gt;Data analysis code for the study on the study of gut microbiomes of Pyrenean brook salamanders in high and low altitudes.&lt;/p&gt;" />
-  <meta name="generator" content="bookdown 0.39 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.41 and GitBook 2.6.7" />
 
   <meta property="og:title" content="AlberdiLab | Aizpurua et al. 2024" />
   <meta property="og:type" content="book" />
@@ -26,7 +26,7 @@
 <meta name="author" content="Antton Alberdi" />
 
 
-<meta name="date" content="2024-06-27" />
+<meta name="date" content="2024-12-09" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -1878,7 +1878,7 @@ a.anchor-section::before {content: '#';font-size: 80%;}
 
 <style type="text/css">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -1888,7 +1888,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -2039,14 +2039,15 @@ color: #a52929;
 </ul></li>
 <li class="chapter" data-level="2" data-path="prepare-data.html"><a href="prepare-data.html"><i class="fa fa-check"></i><b>2</b> Prepare data</a>
 <ul>
-<li class="chapter" data-level="2.1" data-path="prepare-data.html"><a href="prepare-data.html#load-data"><i class="fa fa-check"></i><b>2.1</b> Load data</a>
+<li class="chapter" data-level="2.1" data-path="prepare-data.html"><a href="prepare-data.html#load-gut-data"><i class="fa fa-check"></i><b>2.1</b> Load gut data</a>
 <ul>
-<li class="chapter" data-level="2.1.1" data-path="prepare-data.html"><a href="prepare-data.html#sample-metadata"><i class="fa fa-check"></i><b>2.1.1</b> Sample metadata</a></li>
-<li class="chapter" data-level="2.1.2" data-path="prepare-data.html"><a href="prepare-data.html#read-counts"><i class="fa fa-check"></i><b>2.1.2</b> Read counts</a></li>
-<li class="chapter" data-level="2.1.3" data-path="prepare-data.html"><a href="prepare-data.html#genome-base-hits"><i class="fa fa-check"></i><b>2.1.3</b> Genome base hits</a></li>
+<li class="chapter" data-level="2.1.1" data-path="prepare-data.html"><a href="prepare-data.html#reads"><i class="fa fa-check"></i><b>2.1.1</b> Reads</a></li>
+<li class="chapter" data-level="2.1.2" data-path="prepare-data.html"><a href="prepare-data.html#sample-metadata"><i class="fa fa-check"></i><b>2.1.2</b> Sample metadata</a></li>
+<li class="chapter" data-level="2.1.3" data-path="prepare-data.html"><a href="prepare-data.html#filter-read-counts"><i class="fa fa-check"></i><b>2.1.3</b> Filter read counts</a></li>
 <li class="chapter" data-level="2.1.4" data-path="prepare-data.html"><a href="prepare-data.html#genome-taxonomy"><i class="fa fa-check"></i><b>2.1.4</b> Genome taxonomy</a></li>
-<li class="chapter" data-level="2.1.5" data-path="prepare-data.html"><a href="prepare-data.html#genome-tree"><i class="fa fa-check"></i><b>2.1.5</b> Genome tree</a></li>
-<li class="chapter" data-level="2.1.6" data-path="prepare-data.html"><a href="prepare-data.html#genome-annotations"><i class="fa fa-check"></i><b>2.1.6</b> Genome annotations</a></li>
+<li class="chapter" data-level="2.1.5" data-path="prepare-data.html"><a href="prepare-data.html#genome-base-hits"><i class="fa fa-check"></i><b>2.1.5</b> Genome base hits</a></li>
+<li class="chapter" data-level="2.1.6" data-path="prepare-data.html"><a href="prepare-data.html#genome-tree"><i class="fa fa-check"></i><b>2.1.6</b> Genome tree</a></li>
+<li class="chapter" data-level="2.1.7" data-path="prepare-data.html"><a href="prepare-data.html#genome-annotations"><i class="fa fa-check"></i><b>2.1.7</b> Genome annotations</a></li>
 </ul></li>
 <li class="chapter" data-level="2.2" data-path="prepare-data.html"><a href="prepare-data.html#create-working-objects"><i class="fa fa-check"></i><b>2.2</b> Create working objects</a>
 <ul>
@@ -2056,44 +2057,89 @@ color: #a52929;
 </ul></li>
 <li class="chapter" data-level="2.3" data-path="prepare-data.html"><a href="prepare-data.html#prepare-color-scheme"><i class="fa fa-check"></i><b>2.3</b> Prepare color scheme</a></li>
 <li class="chapter" data-level="2.4" data-path="prepare-data.html"><a href="prepare-data.html#wrap-working-objects"><i class="fa fa-check"></i><b>2.4</b> Wrap working objects</a></li>
+<li class="chapter" data-level="2.5" data-path="prepare-data.html"><a href="prepare-data.html#load-skin-data"><i class="fa fa-check"></i><b>2.5</b> Load skin data</a>
+<ul>
+<li class="chapter" data-level="2.5.1" data-path="prepare-data.html"><a href="prepare-data.html#reads-1"><i class="fa fa-check"></i><b>2.5.1</b> Reads</a></li>
+<li class="chapter" data-level="2.5.2" data-path="prepare-data.html"><a href="prepare-data.html#sample-metadata-1"><i class="fa fa-check"></i><b>2.5.2</b> Sample metadata</a></li>
+<li class="chapter" data-level="2.5.3" data-path="prepare-data.html"><a href="prepare-data.html#read-counts-arrange"><i class="fa fa-check"></i><b>2.5.3</b> Read counts arrange</a></li>
+<li class="chapter" data-level="2.5.4" data-path="prepare-data.html"><a href="prepare-data.html#genome-taxonomy-1"><i class="fa fa-check"></i><b>2.5.4</b> Genome taxonomy</a></li>
+<li class="chapter" data-level="2.5.5" data-path="prepare-data.html"><a href="prepare-data.html#genome-base-hits-1"><i class="fa fa-check"></i><b>2.5.5</b> Genome base hits</a></li>
+<li class="chapter" data-level="2.5.6" data-path="prepare-data.html"><a href="prepare-data.html#genome-tree-1"><i class="fa fa-check"></i><b>2.5.6</b> Genome tree</a></li>
+<li class="chapter" data-level="2.5.7" data-path="prepare-data.html"><a href="prepare-data.html#genome-annotations-1"><i class="fa fa-check"></i><b>2.5.7</b> Genome annotations</a></li>
+</ul></li>
+<li class="chapter" data-level="2.6" data-path="prepare-data.html"><a href="prepare-data.html#create-working-objects-1"><i class="fa fa-check"></i><b>2.6</b> Create working objects</a>
+<ul>
+<li class="chapter" data-level="2.6.1" data-path="prepare-data.html"><a href="prepare-data.html#filter-reads-by-coverage-1"><i class="fa fa-check"></i><b>2.6.1</b> Filter reads by coverage</a></li>
+<li class="chapter" data-level="2.6.2" data-path="prepare-data.html"><a href="prepare-data.html#transform-reads-into-genome-counts-1"><i class="fa fa-check"></i><b>2.6.2</b> Transform reads into genome counts</a></li>
+<li class="chapter" data-level="2.6.3" data-path="prepare-data.html"><a href="prepare-data.html#distill-annotations-into-gifts-1"><i class="fa fa-check"></i><b>2.6.3</b> Distill annotations into GIFTs</a></li>
+</ul></li>
+<li class="chapter" data-level="2.7" data-path="prepare-data.html"><a href="prepare-data.html#prepare-color-scheme-1"><i class="fa fa-check"></i><b>2.7</b> Prepare color scheme</a></li>
+<li class="chapter" data-level="2.8" data-path="prepare-data.html"><a href="prepare-data.html#wrap-working-objects-1"><i class="fa fa-check"></i><b>2.8</b> Wrap working objects</a></li>
 </ul></li>
 <li class="chapter" data-level="3" data-path="data-statistics.html"><a href="data-statistics.html"><i class="fa fa-check"></i><b>3</b> Data statistics</a>
 <ul>
-<li class="chapter" data-level="3.1" data-path="data-statistics.html"><a href="data-statistics.html#sequencing-reads-statistics"><i class="fa fa-check"></i><b>3.1</b> Sequencing reads statistics</a></li>
-<li class="chapter" data-level="3.2" data-path="data-statistics.html"><a href="data-statistics.html#dna-fractions"><i class="fa fa-check"></i><b>3.2</b> DNA fractions</a></li>
-<li class="chapter" data-level="3.3" data-path="data-statistics.html"><a href="data-statistics.html#recovered-microbial-fraction"><i class="fa fa-check"></i><b>3.3</b> Recovered microbial fraction</a></li>
+<li class="chapter" data-level="3.1" data-path="data-statistics.html"><a href="data-statistics.html#gut-microbiota"><i class="fa fa-check"></i><b>3.1</b> Gut microbiota</a></li>
+<li class="chapter" data-level="3.2" data-path="data-statistics.html"><a href="data-statistics.html#sequencing-reads-statistics"><i class="fa fa-check"></i><b>3.2</b> Sequencing reads statistics</a></li>
+<li class="chapter" data-level="3.3" data-path="data-statistics.html"><a href="data-statistics.html#dna-fractions"><i class="fa fa-check"></i><b>3.3</b> DNA fractions</a></li>
+<li class="chapter" data-level="3.4" data-path="data-statistics.html"><a href="data-statistics.html#recovered-microbial-fraction"><i class="fa fa-check"></i><b>3.4</b> Recovered microbial fraction</a></li>
+<li class="chapter" data-level="3.5" data-path="data-statistics.html"><a href="data-statistics.html#skin-microbiota"><i class="fa fa-check"></i><b>3.5</b> Skin microbiota</a>
+<ul>
+<li class="chapter" data-level="3.5.1" data-path="data-statistics.html"><a href="data-statistics.html#sequencing-reads-statistics-1"><i class="fa fa-check"></i><b>3.5.1</b> Sequencing reads statistics</a></li>
+<li class="chapter" data-level="3.5.2" data-path="data-statistics.html"><a href="data-statistics.html#dna-fractions-1"><i class="fa fa-check"></i><b>3.5.2</b> DNA fractions</a></li>
+<li class="chapter" data-level="3.5.3" data-path="data-statistics.html"><a href="data-statistics.html#recovered-microbial-fraction-1"><i class="fa fa-check"></i><b>3.5.3</b> Recovered microbial fraction</a></li>
+</ul></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="mag-catalogue.html"><a href="mag-catalogue.html"><i class="fa fa-check"></i><b>4</b> MAG catalogue</a>
 <ul>
-<li class="chapter" data-level="4.1" data-path="mag-catalogue.html"><a href="mag-catalogue.html#genome-phylogeny"><i class="fa fa-check"></i><b>4.1</b> Genome phylogeny</a></li>
-<li class="chapter" data-level="4.2" data-path="mag-catalogue.html"><a href="mag-catalogue.html#taxonomy-overview"><i class="fa fa-check"></i><b>4.2</b> Taxonomy overview</a></li>
-<li class="chapter" data-level="4.3" data-path="mag-catalogue.html"><a href="mag-catalogue.html#genome-quality"><i class="fa fa-check"></i><b>4.3</b> Genome quality</a></li>
-<li class="chapter" data-level="4.4" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-overview"><i class="fa fa-check"></i><b>4.4</b> Functional overview</a></li>
-<li class="chapter" data-level="4.5" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-ordination"><i class="fa fa-check"></i><b>4.5</b> Functional ordination</a></li>
+<li class="chapter" data-level="4.1" data-path="mag-catalogue.html"><a href="mag-catalogue.html#gut-microbiota-1"><i class="fa fa-check"></i><b>4.1</b> Gut microbiota</a>
+<ul>
+<li class="chapter" data-level="4.1.1" data-path="mag-catalogue.html"><a href="mag-catalogue.html#genome-phylogeny"><i class="fa fa-check"></i><b>4.1.1</b> Genome phylogeny</a></li>
+<li class="chapter" data-level="4.1.2" data-path="mag-catalogue.html"><a href="mag-catalogue.html#taxonomy-overview"><i class="fa fa-check"></i><b>4.1.2</b> Taxonomy overview</a></li>
+<li class="chapter" data-level="4.1.3" data-path="mag-catalogue.html"><a href="mag-catalogue.html#mag-size-mb"><i class="fa fa-check"></i><b>4.1.3</b> Mag size (MB)</a></li>
+<li class="chapter" data-level="4.1.4" data-path="mag-catalogue.html"><a href="mag-catalogue.html#genome-quality"><i class="fa fa-check"></i><b>4.1.4</b> Genome quality</a></li>
+<li class="chapter" data-level="4.1.5" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-overview"><i class="fa fa-check"></i><b>4.1.5</b> Functional overview</a></li>
+<li class="chapter" data-level="4.1.6" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-ordination"><i class="fa fa-check"></i><b>4.1.6</b> Functional ordination</a></li>
+</ul></li>
+<li class="chapter" data-level="4.2" data-path="mag-catalogue.html"><a href="mag-catalogue.html#skin-microbiota-1"><i class="fa fa-check"></i><b>4.2</b> Skin microbiota</a>
+<ul>
+<li class="chapter" data-level="4.2.1" data-path="mag-catalogue.html"><a href="mag-catalogue.html#genome-phylogeny-1"><i class="fa fa-check"></i><b>4.2.1</b> Genome phylogeny</a></li>
+<li class="chapter" data-level="4.2.2" data-path="mag-catalogue.html"><a href="mag-catalogue.html#taxonomy-overview-1"><i class="fa fa-check"></i><b>4.2.2</b> Taxonomy overview</a></li>
+<li class="chapter" data-level="4.2.3" data-path="mag-catalogue.html"><a href="mag-catalogue.html#genome-quality-1"><i class="fa fa-check"></i><b>4.2.3</b> Genome quality</a></li>
+<li class="chapter" data-level="4.2.4" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-overview-1"><i class="fa fa-check"></i><b>4.2.4</b> Functional overview</a></li>
+<li class="chapter" data-level="4.2.5" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-ordination-1"><i class="fa fa-check"></i><b>4.2.5</b> Functional ordination</a></li>
+<li class="chapter" data-level="4.2.6" data-path="mag-catalogue.html"><a href="mag-catalogue.html#combined-ordination"><i class="fa fa-check"></i><b>4.2.6</b> Combined ordination</a></li>
+</ul></li>
 </ul></li>
 <li class="chapter" data-level="5" data-path="community-composition.html"><a href="community-composition.html"><i class="fa fa-check"></i><b>5</b> Community composition</a>
 <ul>
-<li class="chapter" data-level="5.1" data-path="community-composition.html"><a href="community-composition.html#taxonomy-overview-1"><i class="fa fa-check"></i><b>5.1</b> Taxonomy overview</a>
+<li class="chapter" data-level="5.1" data-path="community-composition.html"><a href="community-composition.html#gut-microbiota-2"><i class="fa fa-check"></i><b>5.1</b> Gut microbiota</a>
 <ul>
-<li class="chapter" data-level="5.1.1" data-path="community-composition.html"><a href="community-composition.html#stacked-barplot"><i class="fa fa-check"></i><b>5.1.1</b> Stacked barplot</a></li>
-<li class="chapter" data-level="5.1.2" data-path="community-composition.html"><a href="community-composition.html#phylum-relative-abundances"><i class="fa fa-check"></i><b>5.1.2</b> Phylum relative abundances</a></li>
+<li class="chapter" data-level="5.1.1" data-path="community-composition.html"><a href="community-composition.html#taxonomy-overview-2"><i class="fa fa-check"></i><b>5.1.1</b> Taxonomy overview</a></li>
 </ul></li>
-<li class="chapter" data-level="5.2" data-path="community-composition.html"><a href="community-composition.html#taxonomy-boxplot"><i class="fa fa-check"></i><b>5.2</b> Taxonomy boxplot</a>
+<li class="chapter" data-level="5.2" data-path="community-composition.html"><a href="community-composition.html#skin-microbiota-2"><i class="fa fa-check"></i><b>5.2</b> Skin microbiota</a>
 <ul>
-<li class="chapter" data-level="5.2.1" data-path="community-composition.html"><a href="community-composition.html#family"><i class="fa fa-check"></i><b>5.2.1</b> Family</a></li>
-<li class="chapter" data-level="5.2.2" data-path="community-composition.html"><a href="community-composition.html#genus"><i class="fa fa-check"></i><b>5.2.2</b> Genus</a></li>
+<li class="chapter" data-level="5.2.1" data-path="community-composition.html"><a href="community-composition.html#taxonomy-overview-3"><i class="fa fa-check"></i><b>5.2.1</b> Taxonomy overview</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="6" data-path="alpha-diversity.html"><a href="alpha-diversity.html"><i class="fa fa-check"></i><b>6</b> Alpha diversity</a>
 <ul>
-<li class="chapter" data-level="6.1" data-path="alpha-diversity.html"><a href="alpha-diversity.html#mixed-models"><i class="fa fa-check"></i><b>6.1</b> Mixed models</a></li>
+<li class="chapter" data-level="6.1" data-path="alpha-diversity.html"><a href="alpha-diversity.html#gut-microbiota-3"><i class="fa fa-check"></i><b>6.1</b> Gut microbiota</a></li>
+<li class="chapter" data-level="6.2" data-path="alpha-diversity.html"><a href="alpha-diversity.html#mixed-models"><i class="fa fa-check"></i><b>6.2</b> Mixed models</a></li>
+<li class="chapter" data-level="6.3" data-path="alpha-diversity.html"><a href="alpha-diversity.html#skin-microbiota-3"><i class="fa fa-check"></i><b>6.3</b> Skin microbiota</a></li>
+<li class="chapter" data-level="6.4" data-path="alpha-diversity.html"><a href="alpha-diversity.html#mixed-models-1"><i class="fa fa-check"></i><b>6.4</b> Mixed models</a></li>
 </ul></li>
 <li class="chapter" data-level="7" data-path="beta-diversity.html"><a href="beta-diversity.html"><i class="fa fa-check"></i><b>7</b> Beta diversity</a>
 <ul>
-<li class="chapter" data-level="7.1" data-path="beta-diversity.html"><a href="beta-diversity.html#permanova"><i class="fa fa-check"></i><b>7.1</b> Permanova</a></li>
-<li class="chapter" data-level="7.2" data-path="beta-diversity.html"><a href="beta-diversity.html#richness-diversity-plot"><i class="fa fa-check"></i><b>7.2</b> Richness diversity plot</a></li>
-<li class="chapter" data-level="7.3" data-path="beta-diversity.html"><a href="beta-diversity.html#neutral-diversity-plot"><i class="fa fa-check"></i><b>7.3</b> Neutral diversity plot</a></li>
-<li class="chapter" data-level="7.4" data-path="beta-diversity.html"><a href="beta-diversity.html#functional-diversity-plot"><i class="fa fa-check"></i><b>7.4</b> Functional diversity plot</a></li>
+<li class="chapter" data-level="7.1" data-path="beta-diversity.html"><a href="beta-diversity.html#gut-microbiota-4"><i class="fa fa-check"></i><b>7.1</b> Gut microbiota</a>
+<ul>
+<li class="chapter" data-level="7.1.1" data-path="beta-diversity.html"><a href="beta-diversity.html#permanova"><i class="fa fa-check"></i><b>7.1.1</b> Permanova</a></li>
+<li class="chapter" data-level="7.1.2" data-path="beta-diversity.html"><a href="beta-diversity.html#nmds"><i class="fa fa-check"></i><b>7.1.2</b> NMDS</a></li>
+</ul></li>
+<li class="chapter" data-level="7.2" data-path="beta-diversity.html"><a href="beta-diversity.html#skin-microbiota-4"><i class="fa fa-check"></i><b>7.2</b> Skin microbiota</a>
+<ul>
+<li class="chapter" data-level="7.2.1" data-path="beta-diversity.html"><a href="beta-diversity.html#permanova-1"><i class="fa fa-check"></i><b>7.2.1</b> Permanova</a></li>
+<li class="chapter" data-level="7.2.2" data-path="beta-diversity.html"><a href="beta-diversity.html#nmds-1"><i class="fa fa-check"></i><b>7.2.2</b> NMDS</a></li>
+</ul></li>
 </ul></li>
 <li class="chapter" data-level="8" data-path="differential-abundance.html"><a href="differential-abundance.html"><i class="fa fa-check"></i><b>8</b> Differential abundance</a>
 <ul>
@@ -2102,23 +2148,39 @@ color: #a52929;
 <ul>
 <li class="chapter" data-level="8.2.1" data-path="differential-abundance.html"><a href="differential-abundance.html#with-random-effect"><i class="fa fa-check"></i><b>8.2.1</b> With random effect</a></li>
 <li class="chapter" data-level="8.2.2" data-path="differential-abundance.html"><a href="differential-abundance.html#without-random-effect"><i class="fa fa-check"></i><b>8.2.2</b> Without random effect</a></li>
-<li class="chapter" data-level="8.2.3" data-path="differential-abundance.html"><a href="differential-abundance.html#phylum-level-1"><i class="fa fa-check"></i><b>8.2.3</b> Phylum level</a></li>
-<li class="chapter" data-level="8.2.4" data-path="differential-abundance.html"><a href="differential-abundance.html#family-level-1"><i class="fa fa-check"></i><b>8.2.4</b> Family level</a></li>
+<li class="chapter" data-level="8.2.3" data-path="differential-abundance.html"><a href="differential-abundance.html#phylum-level-3"><i class="fa fa-check"></i><b>8.2.3</b> Phylum level</a></li>
+<li class="chapter" data-level="8.2.4" data-path="differential-abundance.html"><a href="differential-abundance.html#family-level-3"><i class="fa fa-check"></i><b>8.2.4</b> Family level</a></li>
 <li class="chapter" data-level="8.2.5" data-path="differential-abundance.html"><a href="differential-abundance.html#genera-1"><i class="fa fa-check"></i><b>8.2.5</b> Genera</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="9" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html"><i class="fa fa-check"></i><b>9</b> Differential abundance analysis: functional</a>
+<li class="chapter" data-level="9" data-path="differential-abundance-1.html"><a href="differential-abundance-1.html"><i class="fa fa-check"></i><b>9</b> Differential abundance</a>
 <ul>
-<li class="chapter" data-level="9.1" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#wilcoxon"><i class="fa fa-check"></i><b>9.1</b> Wilcoxon</a>
+<li class="chapter" data-level="9.1" data-path="differential-abundance-1.html"><a href="differential-abundance-1.html#structural-zeros-1"><i class="fa fa-check"></i><b>9.1</b> Structural zeros</a></li>
+<li class="chapter" data-level="9.2" data-path="differential-abundance-1.html"><a href="differential-abundance-1.html#mags-in-different-locations-and-shared-among-locations"><i class="fa fa-check"></i><b>9.2</b> MAGs in different locations and shared among locations</a></li>
+<li class="chapter" data-level="9.3" data-path="differential-abundance-1.html"><a href="differential-abundance-1.html#enrichment-analysis-between-high-and-low-altitude-ancombc2-1"><i class="fa fa-check"></i><b>9.3</b> Enrichment analysis between high and low altitude: Ancombc2</a>
 <ul>
-<li class="chapter" data-level="9.1.1" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#community-elements-differences"><i class="fa fa-check"></i><b>9.1.1</b> Community elements differences:</a></li>
-<li class="chapter" data-level="9.1.2" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#community-functions-differences"><i class="fa fa-check"></i><b>9.1.2</b> Community functions differences</a></li>
-<li class="chapter" data-level="9.1.3" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#community-domains-differences"><i class="fa fa-check"></i><b>9.1.3</b> Community domains differences</a></li>
+<li class="chapter" data-level="9.3.1" data-path="differential-abundance-1.html"><a href="differential-abundance-1.html#with-random-effect-1"><i class="fa fa-check"></i><b>9.3.1</b> With random effect</a></li>
+<li class="chapter" data-level="9.3.2" data-path="differential-abundance-1.html"><a href="differential-abundance-1.html#without-random-effect-1"><i class="fa fa-check"></i><b>9.3.2</b> Without random effect</a></li>
 </ul></li>
-<li class="chapter" data-level="9.2" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#ancom-bc2"><i class="fa fa-check"></i><b>9.2</b> ANCOM-BC2</a>
+</ul></li>
+<li class="chapter" data-level="10" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html"><i class="fa fa-check"></i><b>10</b> Differential abundance analysis: functional</a>
 <ul>
-<li class="chapter" data-level="9.2.1" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#without-random-effect-1"><i class="fa fa-check"></i><b>9.2.1</b> Without random effect</a></li>
-<li class="chapter" data-level="9.2.2" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#witho-random-effect"><i class="fa fa-check"></i><b>9.2.2</b> Witho random effect</a></li>
+<li class="chapter" data-level="10.1" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#mci"><i class="fa fa-check"></i><b>10.1</b> MCI</a></li>
+<li class="chapter" data-level="10.2" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#wilcoxon"><i class="fa fa-check"></i><b>10.2</b> Wilcoxon</a>
+<ul>
+<li class="chapter" data-level="10.2.1" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#community-elements-differences"><i class="fa fa-check"></i><b>10.2.1</b> Community elements differences:</a></li>
+<li class="chapter" data-level="10.2.2" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#community-functions-differences"><i class="fa fa-check"></i><b>10.2.2</b> Community functions differences</a></li>
+<li class="chapter" data-level="10.2.3" data-path="differential-abundance-analysis-functional.html"><a href="differential-abundance-analysis-functional.html#community-domains-differences"><i class="fa fa-check"></i><b>10.2.3</b> Community domains differences</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="differential-abundance-analysis-functional-1.html"><a href="differential-abundance-analysis-functional-1.html"><i class="fa fa-check"></i><b>11</b> Differential abundance analysis: functional</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="differential-abundance-analysis-functional-1.html"><a href="differential-abundance-analysis-functional-1.html#mci-1"><i class="fa fa-check"></i><b>11.1</b> MCI</a></li>
+<li class="chapter" data-level="11.2" data-path="differential-abundance-analysis-functional-1.html"><a href="differential-abundance-analysis-functional-1.html#wilcoxon-1"><i class="fa fa-check"></i><b>11.2</b> Wilcoxon</a>
+<ul>
+<li class="chapter" data-level="11.2.1" data-path="differential-abundance-analysis-functional-1.html"><a href="differential-abundance-analysis-functional-1.html#community-elements-differences-1"><i class="fa fa-check"></i><b>11.2.1</b> Community elements differences:</a></li>
+<li class="chapter" data-level="11.2.2" data-path="differential-abundance-analysis-functional-1.html"><a href="differential-abundance-analysis-functional-1.html#community-functions-differences-1"><i class="fa fa-check"></i><b>11.2.2</b> Community functions differences</a></li>
+<li class="chapter" data-level="11.2.3" data-path="differential-abundance-analysis-functional-1.html"><a href="differential-abundance-analysis-functional-1.html#community-domains-differences-1"><i class="fa fa-check"></i><b>11.2.3</b> Community domains differences</a></li>
 </ul></li>
 </ul></li>
 <li class="divider"></li>
@@ -2150,7 +2212,7 @@ color: #a52929;
 <p class="author"><em>Carlos Cabido<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a></em></p>
 <p class="author"><em>Garazi Martin Bideguren<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></em></p>
 <p class="author"><em>Antton Alberdi<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a></em></p>
-<p class="date"><em>2024-06-27</em></p>
+<p class="date"><em>2024-12-09</em></p>
 </div>
 <div id="introduction" class="section level1 hasAnchor" number="1">
 <h1><span class="header-section-number">Chapter 1</span> Introduction<a href="index.html#introduction" class="anchor-section" aria-label="Anchor link to header"></a></h1>
@@ -2177,32 +2239,36 @@ color: #a52929;
 <span id="cb2-5"><a href="index.html#cb2-5" tabindex="-1"></a><span class="fu">library</span>(devtools)</span>
 <span id="cb2-6"><a href="index.html#cb2-6" tabindex="-1"></a><span class="fu">library</span>(tinytable)</span>
 <span id="cb2-7"><a href="index.html#cb2-7" tabindex="-1"></a><span class="fu">library</span>(rairtable)</span>
-<span id="cb2-8"><a href="index.html#cb2-8" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="index.html#cb2-9" tabindex="-1"></a><span class="co"># For tree handling</span></span>
-<span id="cb2-10"><a href="index.html#cb2-10" tabindex="-1"></a><span class="fu">library</span>(ape)</span>
-<span id="cb2-11"><a href="index.html#cb2-11" tabindex="-1"></a><span class="fu">library</span>(phyloseq)</span>
-<span id="cb2-12"><a href="index.html#cb2-12" tabindex="-1"></a><span class="fu">library</span>(phytools)</span>
-<span id="cb2-13"><a href="index.html#cb2-13" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="index.html#cb2-14" tabindex="-1"></a><span class="co"># For plotting</span></span>
-<span id="cb2-15"><a href="index.html#cb2-15" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb2-16"><a href="index.html#cb2-16" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
-<span id="cb2-17"><a href="index.html#cb2-17" tabindex="-1"></a><span class="fu">library</span>(ggpubr)</span>
-<span id="cb2-18"><a href="index.html#cb2-18" tabindex="-1"></a><span class="fu">library</span>(ggnewscale)</span>
-<span id="cb2-19"><a href="index.html#cb2-19" tabindex="-1"></a><span class="fu">library</span>(gridExtra)</span>
-<span id="cb2-20"><a href="index.html#cb2-20" tabindex="-1"></a><span class="fu">library</span>(ggtreeExtra)</span>
-<span id="cb2-21"><a href="index.html#cb2-21" tabindex="-1"></a><span class="fu">library</span>(ggtree)</span>
-<span id="cb2-22"><a href="index.html#cb2-22" tabindex="-1"></a><span class="fu">library</span>(ggh4x)</span>
-<span id="cb2-23"><a href="index.html#cb2-23" tabindex="-1"></a></span>
-<span id="cb2-24"><a href="index.html#cb2-24" tabindex="-1"></a><span class="co"># For statistics</span></span>
-<span id="cb2-25"><a href="index.html#cb2-25" tabindex="-1"></a><span class="fu">library</span>(spaa)</span>
-<span id="cb2-26"><a href="index.html#cb2-26" tabindex="-1"></a><span class="fu">library</span>(vegan)</span>
-<span id="cb2-27"><a href="index.html#cb2-27" tabindex="-1"></a><span class="fu">library</span>(Rtsne)</span>
-<span id="cb2-28"><a href="index.html#cb2-28" tabindex="-1"></a><span class="fu">library</span>(geiger)</span>
-<span id="cb2-29"><a href="index.html#cb2-29" tabindex="-1"></a><span class="fu">library</span>(hilldiv2)</span>
-<span id="cb2-30"><a href="index.html#cb2-30" tabindex="-1"></a><span class="fu">library</span>(distillR)</span>
-<span id="cb2-31"><a href="index.html#cb2-31" tabindex="-1"></a><span class="fu">library</span>(ANCOMBC)</span>
-<span id="cb2-32"><a href="index.html#cb2-32" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
-<span id="cb2-33"><a href="index.html#cb2-33" tabindex="-1"></a><span class="fu">library</span>(nlme)</span></code></pre></div>
+<span id="cb2-8"><a href="index.html#cb2-8" tabindex="-1"></a><span class="fu">library</span>(janitor)</span>
+<span id="cb2-9"><a href="index.html#cb2-9" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="index.html#cb2-10" tabindex="-1"></a><span class="co"># For tree handling</span></span>
+<span id="cb2-11"><a href="index.html#cb2-11" tabindex="-1"></a><span class="fu">library</span>(ape)</span>
+<span id="cb2-12"><a href="index.html#cb2-12" tabindex="-1"></a><span class="fu">library</span>(phyloseq)</span>
+<span id="cb2-13"><a href="index.html#cb2-13" tabindex="-1"></a><span class="fu">library</span>(phytools)</span>
+<span id="cb2-14"><a href="index.html#cb2-14" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="index.html#cb2-15" tabindex="-1"></a><span class="co"># For plotting</span></span>
+<span id="cb2-16"><a href="index.html#cb2-16" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb2-17"><a href="index.html#cb2-17" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb2-18"><a href="index.html#cb2-18" tabindex="-1"></a><span class="fu">library</span>(ggpubr)</span>
+<span id="cb2-19"><a href="index.html#cb2-19" tabindex="-1"></a><span class="fu">library</span>(ggnewscale)</span>
+<span id="cb2-20"><a href="index.html#cb2-20" tabindex="-1"></a><span class="fu">library</span>(gridExtra)</span>
+<span id="cb2-21"><a href="index.html#cb2-21" tabindex="-1"></a><span class="fu">library</span>(ggtreeExtra)</span>
+<span id="cb2-22"><a href="index.html#cb2-22" tabindex="-1"></a><span class="fu">library</span>(ggtree)</span>
+<span id="cb2-23"><a href="index.html#cb2-23" tabindex="-1"></a><span class="fu">library</span>(ggh4x)</span>
+<span id="cb2-24"><a href="index.html#cb2-24" tabindex="-1"></a><span class="fu">library</span>(UpSetR)</span>
+<span id="cb2-25"><a href="index.html#cb2-25" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="index.html#cb2-26" tabindex="-1"></a><span class="co"># For statistics</span></span>
+<span id="cb2-27"><a href="index.html#cb2-27" tabindex="-1"></a><span class="fu">library</span>(spaa)</span>
+<span id="cb2-28"><a href="index.html#cb2-28" tabindex="-1"></a><span class="fu">library</span>(vegan)</span>
+<span id="cb2-29"><a href="index.html#cb2-29" tabindex="-1"></a><span class="fu">library</span>(Rtsne)</span>
+<span id="cb2-30"><a href="index.html#cb2-30" tabindex="-1"></a><span class="fu">library</span>(geiger)</span>
+<span id="cb2-31"><a href="index.html#cb2-31" tabindex="-1"></a><span class="fu">library</span>(hilldiv2)</span>
+<span id="cb2-32"><a href="index.html#cb2-32" tabindex="-1"></a><span class="fu">library</span>(distillR)</span>
+<span id="cb2-33"><a href="index.html#cb2-33" tabindex="-1"></a><span class="fu">library</span>(ANCOMBC)</span>
+<span id="cb2-34"><a href="index.html#cb2-34" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb2-35"><a href="index.html#cb2-35" tabindex="-1"></a><span class="fu">library</span>(nlme)</span>
+<span id="cb2-36"><a href="index.html#cb2-36" tabindex="-1"></a><span class="fu">library</span>(pairwiseAdonis)</span>
+<span id="cb2-37"><a href="index.html#cb2-37" tabindex="-1"></a><span class="fu">library</span>(emmeans)</span></code></pre></div>
 
 </div>
 </div>
