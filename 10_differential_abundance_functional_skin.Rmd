@@ -35,6 +35,121 @@ GIFTs_functions_community <- to.community(GIFTs_functions,genome_counts_row,GIFT
 GIFTs_domains_community <- to.community(GIFTs_domains,genome_counts_row,GIFT_db)
 ```
 
+## Functional capacity of the structural MAGs
+```{r struct_zero_capwild, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+low_samples <- sample_metadata %>% 
+  filter(environment == "low") %>%
+  dplyr::select(sample) %>%
+  pull()
+
+high_samples <- sample_metadata %>% 
+  filter(environment == "high") %>%
+  dplyr::select(sample) %>% pull()
+
+structural_zeros <- genome_counts_filt %>% 
+   rowwise() %>% #compute for each row (genome)
+   mutate(all_zeros_low = all(c_across(all_of(low_samples)) == 0)) %>% # set true if all samples in TJ1 have zeros
+   mutate(all_zeros_high = all(c_across(all_of(high_samples)) == 0)) %>% # set true if all samples in TJ2 have zeros
+   mutate(average_low = mean(c_across(all_of(low_samples)), na.rm = TRUE)) %>% # get average genome counts across TJ1
+   mutate(average_high = mean(c_across(all_of(high_samples)), na.rm = TRUE)) %>% # get average genome counts across TJ2
+   filter(all_zeros_low == TRUE || all_zeros_high==TRUE)  %>% # filter only genomes with structural zeros
+   mutate(present = case_when(
+      all_zeros_low & !all_zeros_high ~ "high",
+      !all_zeros_low & all_zeros_high ~ "low",
+      !all_zeros_low & !all_zeros_high ~ "None",
+      TRUE ~ NA_character_
+    )) %>%
+   mutate(average = ifelse(present == "low", average_low, average_high)) %>%
+   dplyr::select(genome, present, average) %>%
+   left_join(genome_metadata, by=join_by(genome==genome)) %>%
+  mutate_at(vars(genus), ~ str_replace(., "[dpcofgs]__", ""))%>%
+   arrange(present,-average)
+structural_zeros
+
+struct_mag <- structural_zeros %>% 
+  filter(present %in% c("high","low")) %>% 
+  select(genome) %>% 
+  pull()
+struct_mag_meta <- structural_zeros %>% 
+  filter(present %in% c("high","low"))
+```
+```{r structural_functional_capacity2, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=12, fig.width=10, fig.fullwidth=TRUE}
+p <- GIFTs_elements_filtered %>% 
+  rownames_to_column("genome") %>%
+  filter(genome %in% struct_mag)  %>% 
+    pivot_longer(!genome,names_to="trait",values_to="gift") %>% 
+    left_join(struct_mag_meta, by = join_by(genome == genome))%>%
+    mutate(functionid = substr(trait, 1, 3)) %>%
+    mutate(trait = case_when(
+      trait %in% GIFT_db$Code_element ~ GIFT_db$Element[match(trait, GIFT_db$Code_element)],
+      TRUE ~ trait
+    )) %>%
+    mutate(functionid = case_when(
+      functionid %in% GIFT_db$Code_function ~ GIFT_db$Function[match(functionid, GIFT_db$Code_function)],
+      TRUE ~ functionid
+    )) %>%
+    mutate(trait=factor(trait,levels=unique(GIFT_db$Element))) %>%
+    mutate(functionid=factor(functionid,levels=unique(GIFT_db$Function)))
+  
+# unique(GIFT_db$Function) %>% 
+#   as.data.frame() %>% 
+#   rename(trait=1) %>% 
+#   mutate(var_color = c("no","yes","yes","no","yes","yes","yes","no","yes","yes","no","yes","no","yes","no","yes","no","yes","no","no","no"))
+
+
+ q<-p %>% ggplot(aes(x=genus,y=trait,fill=gift)) +
+        geom_tile(colour="white", linewidth=0.2)+
+        scale_fill_gradientn(colours=rev(c("#d53e4f", "#f46d43", "#fdae61", "#fee08b", "#e6f598", "#abdda4", "#ddf1da")))+
+        facet_grid(functionid ~ factor(present, labels=c("high" = "High altitude", "low" = "Low altitude")), scales="free",space="free") +
+        theme(axis.text.x = element_text(angle = 45, hjust=1),
+              axis.text.y = element_text(size=6),
+              strip.text.y = element_text(angle = 0),
+#        panel.border = element_rect(color = "black", fill = NA, size = 1),
+          strip.background.x = element_rect(fill = "white"),
+          strip.background.y = element_rect(fill = "gray96"),
+          strip.text.x = element_text(size = 12, lineheight = 0.6,face="bold"),
+          panel.background = element_blank()
+          ) +
+        labs(y="Traits",x="Genera",fill="GIFT")
+## Get the plot grob
+gt <- ggplotGrob(q)
+
+## Check the layout
+gtable_show_layout(gt)
+
+panels = subset(gt$layout, grepl("panel", gt$layout$name), t:r)
+
+# The span of the horizontal gap
+Rmin = min(panels$r)
+Rmax = max(panels$r) + 1
+
+#The span of the vertical gap
+Bmin = min(panels$t) - 1
+Bmax = max(panels$t)
+
+# The columns and rows of the gaps
+cols = unique(panels$r)[-length(unique(panels$r))] + 1
+rows = unique(panels$t)[-length(unique(panels$t))] + 1
+
+# The grob - orange rectangle
+g = rectGrob(gp = gpar(col = NA, fill = "grey"))
+
+## Add grey rectangles into the vertical and/or horizontal gaps
+# gt <- gtable_add_grob(gt,
+#       rep(list(g), length(cols)),
+#       t=Bmin, l=cols, b=Bmax)
+
+gt <- gtable_add_grob(gt, 
+      rep(list(g), length(rows)),
+      t=rows, l=Rmin, r=Rmax)
+
+## Draw it
+grid.newpage()
+grid.draw(gt)
+```
+
+
+
 ## MCI
 ```{r skin_gitfs_functional_wild, echo=TRUE,results=TRUE}
 GIFTs_functions_community %>%
@@ -58,11 +173,11 @@ wilcox.test(value ~ environment, data=MCI)
 ```
 
 ```{r skin_comunity_elem_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=12, fig.width=10, fig.fullwidth=TRUE}
-GIFTs_elements_community %>%
+p<-GIFTs_elements_community %>%
     as.data.frame() %>%
     rownames_to_column(var="sample")%>%
     pivot_longer(!sample,names_to="trait",values_to="gift") %>%
-    left_join(sample_metadata, by = join_by(sample == sample)) %>%
+    left_join(sample_metadata[c(1,10)], by = join_by(sample == sample)) %>%
     mutate(functionid = substr(trait, 1, 3)) %>%
     mutate(trait = case_when(
       trait %in% GIFT_db$Code_element ~ GIFT_db$Element[match(trait, GIFT_db$Code_element)],
@@ -73,16 +188,55 @@ GIFTs_elements_community %>%
       TRUE ~ functionid
     )) %>%
     mutate(trait=factor(trait,levels=unique(GIFT_db$Element))) %>%
-    mutate(functionid=factor(functionid,levels=unique(GIFT_db$Function))) %>%
-    ggplot(aes(x=sample,y=trait,fill=gift)) +
+    mutate(functionid=factor(functionid,levels=unique(GIFT_db$Function)))
+ traits <-p %>% ggplot(aes(x=sample,y=trait,fill=gift)) +
         geom_tile(colour="white", linewidth=0.2)+
         scale_fill_gradientn(colours=rev(c("#d53e4f", "#f46d43", "#fdae61", "#fee08b", "#e6f598", "#abdda4", "#ddf1da")))+
         facet_grid(functionid ~ environment, scales="free",space="free") +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-              axis.text.y = element_text(size=8),
-              strip.text.y = element_text(angle = 0)
-              ) +
+              axis.text.y = element_text(size=6),
+              strip.text.y = element_text(angle = 0),
+#        panel.border = element_rect(color = "black", fill = NA, size = 1),
+          strip.background.x = element_rect(fill = "white"),
+          strip.background.y = element_rect(fill = "gray96"),
+          strip.text.x = element_text(size = 12, lineheight = 0.6,face="bold"),
+          panel.background = element_blank()) +
         labs(y="Traits",x="Samples",fill="GIFT")
+## Get the plot grob
+gt <- ggplotGrob(traits)
+
+## Check the layout
+gtable_show_layout(gt)
+
+panels = subset(gt$layout, grepl("panel", gt$layout$name), t:r)
+
+# The span of the horizontal gap
+Rmin = min(panels$r)
+Rmax = max(panels$r) + 1
+
+#The span of the vertical gap
+Bmin = min(panels$t) - 1
+Bmax = max(panels$t)
+
+# The columns and rows of the gaps
+cols = unique(panels$r)[-length(unique(panels$r))] + 1
+rows = unique(panels$t)[-length(unique(panels$t))] + 1
+
+# The grob - orange rectangle
+g = rectGrob(gp = gpar(col = NA, fill = "grey"))
+
+## Add orange rectangles into the vertical and horizontal gaps
+# gt <- gtable_add_grob(gt, 
+#       rep(list(g), length(cols)),
+#       t=Bmin, l=cols, b=Bmax)
+
+gt <- gtable_add_grob(gt, 
+      rep(list(g), length(rows)),
+      t=rows, l=Rmin, r=Rmax)
+
+## Draw it
+grid.newpage()
+grid.draw(gt)
 ```
 ```{r skin_comunity_funct_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
 unique_funct_db<- GIFT_db[c(3,4,5)] %>% 
@@ -268,7 +422,26 @@ difference_table %>%
                                 colour = "grey"))+
   xlab("Microbial Functional Capacity") + 
   ylab("Mean difference")+
-  labs(fill="Elevation")
+  labs(fill="Altitude")
+```
+```{r skin_commun_wilcox_elem_logf_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=10, fig.width=12, fig.fullwidth=TRUE, eval=FALSE}
+difference_table %>%
+  left_join(., log_fold, by=join_by(Elements==elements)) %>% 
+  ggplot(aes(x=forcats::fct_reorder(Function,logfc_high_low), y=logfc_high_low, fill=group_color)) + 
+  geom_col() +
+#  geom_point(size=4) + 
+  scale_fill_manual(values=treatment_colors) +
+  geom_hline(yintercept=0) + 
+  coord_flip()+
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 12),
+        legend.position = "right", 
+        panel.background = element_blank(),
+          panel.grid.major = element_line(size = 0.15, linetype = 'solid',
+                                colour = "grey"))+
+  xlab("Microbial Functional Capacity") + 
+  ylab("Log-fold change")+
+  labs(fill="Altitude")
 ```
 ```{r skin_plot3, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=12, fig.fullwidth=TRUE}
 
@@ -339,7 +512,6 @@ function_gift_filt <- subset(function_gift_t, trait %in% significant_functional$
   rownames_to_column(., "sample")%>% 
   left_join(., sample_metadata[c(1,10)], by = join_by(sample == sample))
 
-
 function_gift_filt %>%
   select(-sample)%>%
   group_by(environment)  %>%
@@ -351,6 +523,55 @@ function_gift_filt %>%
   rownames_to_column(., "Code_function")  %>%
   left_join(.,unique_funct_db[c(1,3)],by = join_by(Code_function == Code_function))
 ```
+```{r skin_commun_wilcox_func, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+
+unique_funct_db<- GIFT_db[c(3,4,5)] %>% 
+  distinct(Code_function, .keep_all = TRUE)
+
+difference_table_func <- function_gift_filt %>%
+  select(-sample) %>%
+  group_by(environment) %>%
+  summarise(across(everything(), mean)) %>%
+  t() %>%
+  row_to_names(row_number = 1) %>%
+  as.data.frame() %>%
+  mutate_if(is.character, as.numeric) %>%
+  rownames_to_column(., "Code_function") %>%
+  left_join(.,unique_funct_db,by = join_by(Code_function == Code_function)) %>% 
+  arrange(Function) %>% 
+  mutate(Difference=high-low)%>% 
+  mutate(group_color = ifelse(Difference <0, "Low","High")) 
+
+difference_table_func <- function_gift_filt %>%
+  select(-sample) %>%
+  group_by(environment) %>%
+  summarise(across(everything(), mean)) %>%
+  t() %>%
+  row_to_names(row_number = 1) %>%
+  as.data.frame() %>%
+  mutate_if(is.character, as.numeric) %>%
+  rownames_to_column(., "Functions") %>%
+  left_join(.,unique_funct_db,by = join_by(Functions == Code_function)) %>% 
+  arrange(Function) %>% 
+  mutate(Difference=high-low)%>% 
+  mutate(group_color = ifelse(Difference <0, "Low","High")) 
+```
+
+```{r skin_log_fold_func_calc, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+means_gift_func <- function_gift_filt %>% 
+  select(-environment) %>% 
+  pivot_longer(!sample, names_to = "functions", values_to = "abundance") %>% 
+  left_join(sample_metadata, by=join_by(sample==sample)) %>% 
+  group_by(environment, functions) %>%
+  summarise(mean=mean(abundance))
+
+log_fold_func <- means_gift_func %>%
+  group_by(functions) %>%
+  summarise(
+    logfc_high_low = log2(mean[environment == "high"] / mean[environment == "low"])
+    )
+```
+
 
 ```{r skin_function_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 function_gift_names <- function_gift_filt%>%
@@ -371,7 +592,7 @@ function_gift_names <- function_gift_filt%>%
   left_join(., sample_metadata[c(1,10)], by = join_by(sample == sample))
 
 
-colNames <- names(function_gift_names)[2:4]
+colNames <- names(function_gift_names)[2:12]
 for(i in colNames){
   plt <- ggplot(function_gift_names, aes(x=environment, y=.data[[i]], color = environment, fill=environment)) +
     geom_boxplot(alpha = 0.2, outlier.shape = NA, width = 0.3, show.legend = FALSE) +
@@ -386,6 +607,26 @@ for(i in colNames){
     panel.border = element_blank())
 print(plt)
 }
+```
+
+```{r skin_commun_wilcox_func_logf_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=4, fig.width=8, fig.fullwidth=TRUE, eval=FALSE}
+difference_table_func %>%
+  left_join(., log_fold_func, by=join_by(Functions==functions)) %>% 
+  ggplot(aes(x=forcats::fct_reorder(Function,logfc_high_low), y=logfc_high_low, fill=group_color)) + 
+  geom_col() +
+#  geom_point(size=4) + 
+  scale_fill_manual(values=treatment_colors) +
+  geom_hline(yintercept=0) + 
+  coord_flip()+
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 12),
+        legend.position = "right", 
+        panel.background = element_blank(),
+          panel.grid.major = element_line(size = 0.15, linetype = 'solid',
+                                colour = "grey"))+
+  xlab("Microbial Functional Capacity") + 
+  ylab("Log-fold change")+
+  labs(fill="Elevation")
 ```
 
 ### Community domains differences
@@ -437,6 +678,7 @@ domain_gift_filt %>%
   mutate_if(is.character, as.numeric)  %>%
   rownames_to_column(., "Code_domain")
 ```
+
 
 ```{r skin_domain_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 domain_gift_names <- domain_gift_filt%>%

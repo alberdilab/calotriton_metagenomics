@@ -572,6 +572,36 @@ phylum_summary %>%
     dplyr::select(phylum,Total,Leitzaran,Goizueta,Harpea,Erlan)
 ```
 
+#### Class level
+
+***Percentange of classes in each group***
+
+```{r skin_taxonomy_class_summary, warning=FALSE, comments="", message=FALSE}
+class_summary <- genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(sample_metadata, by = join_by(sample == sample)) %>% #append sample metadata
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  group_by(sample,class, river,environment) %>%
+  summarise(relabun=sum(count))
+```
+
+```{r skin_taxonomy_class_summary_origin, warning=FALSE, comments="", message=FALSE}
+class_summary %>%
+    group_by(class) %>%
+    summarise(total_mean=mean(relabun*100, na.rm=T),
+              total_sd=sd(relabun*100, na.rm=T),
+              High_mean=mean(relabun[environment=="high"]*100, na.rm=T),
+             High_sd=sd(relabun[environment=="high"]*100, na.rm=T),
+              Low_mean=mean(relabun[environment=="low"]*100, na.rm=T),
+              Low_sd=sd(relabun[environment=="low"]*100, na.rm=T)) %>%
+    mutate(Total=str_c(round(total_mean,3),"±",round(total_sd,3)),
+           High=str_c(round(High_mean,3),"±",round(High_sd,3)),
+           Low=str_c(round(Low_mean,3),"±",round(Low_sd,3))) %>% 
+    arrange(-total_mean) %>% 
+    dplyr::select(class,Total,High,Low)
+```
+
 #### Family level
 
 ***Percentange of families in each group***
@@ -647,6 +677,86 @@ family_summary %>%
     dplyr::select(family,Total,Leitzaran,Goizueta,Harpea,Erlan)
 ```
 
+```{r skin_taxonomy_fam_barplot, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  left_join(., sample_metadata, by = join_by(sample == sample)) %>% #append sample metadata
+  filter(count > 0) %>% #filter 0 counts
+  ggplot(., aes(x=sample,y=count, fill=family, group=family)) + #grouping enables keeping the same sorting of taxonomic units
+    geom_bar(stat="identity", colour="white", linewidth=0.1) + #plot stacked bars with white borders
+    scale_fill_viridis(discrete = TRUE)+
+    facet_nested(~factor(environment, labels=c("low" = "Low altitude", "high" = "High altitude")),  scales="free") + #facet per day and treatment
+    guides(fill = guide_legend(ncol = 1)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.ticks.x = element_blank(),
+          axis.title.x = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(size = 12, lineheight = 0.6,face="bold"),
+          axis.line = element_line(linewidth = 0.5, linetype = "solid", colour = "black")) +
+   labs(fill="Family",y = "Relative abundance",x="Samples")
+```
+***Family***
+```{r phyloseq_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+#Phyloseq object
+count_phy <- genome_counts_filt %>%
+  column_to_rownames(var="genome")%>%
+  otu_table(., taxa_are_rows=T)
+
+sample_info_tab_phy <- sample_metadata%>%
+  column_to_rownames(var="sample")%>%
+  sample_data()
+
+TAX <- genome_metadata%>%
+  column_to_rownames(var="genome")%>%
+  select(1:7)%>%
+  as.matrix()%>%
+  tax_table()
+tree <- phy_tree(genome_tree)
+
+physeq_all = phyloseq(count_phy, TAX, sample_info_tab_phy, tree)
+physeq_all_clr <- microbiome::transform(physeq_all, 'clr')
+
+```
+```{r fam_MW, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+physeq_clr_family <- microbiome::aggregate_taxa(physeq_all_clr, 'family')
+clr_t_family <- as.data.frame(t(as.matrix(physeq_clr_family@otu_table))) %>%
+  rownames_to_column(., "sample")%>% 
+  left_join(., sample_metadata[c(1,10)], by = join_by(sample == sample))
+significant_family <- clr_t_family %>%
+    pivot_longer(-c(sample,environment), names_to = "Family", values_to = "value") %>%
+    group_by(Family) %>%
+    summarise(p_value = wilcox.test(value ~ environment, exact = FALSE, alternative = "less")$p.value) %>%
+    mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
+    filter(p_adjust < 0.05)
+significant_family
+```
+
+```{r family_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+physeq_family <- microbiome::aggregate_taxa(physeq_all, 'family')
+physeq_family_rel <-  microbiome::transform(physeq_family, "compositional")
+family <- as.data.frame(t(as.matrix(physeq_family_rel@otu_table)))
+significant_family_table <- family[, colnames(family) %in% significant_family$Family, drop=FALSE] %>%
+  rownames_to_column(., "sample")%>%  
+  left_join(., sample_metadata[c(1,10)], by = join_by(sample == sample))%>%
+  select(-sample)
+
+ggplot(significant_family_table, aes(x=environment, y=f__Methylophilaceae, color = environment, fill=environment)) +
+    geom_boxplot(alpha = 0.2, outlier.shape = NA, width = 0.3, show.legend = FALSE) +
+  geom_jitter(width = 0.1, show.legend = TRUE) +
+  theme_minimal() +
+  theme(
+    axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank())
+```
+
 #### Genus level
 
 ```{r skin_taxonomy_genus_summary, warning=FALSE, comments="", message=FALSE}
@@ -696,6 +806,29 @@ genus_summary %>%
 
 ```
 
+```{r skin_taxonomy_gen_barplot, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  left_join(., sample_metadata, by = join_by(sample == sample)) %>% #append sample metadata
+  filter(count > 0) %>% #filter 0 counts
+  ggplot(., aes(x=sample,y=count, fill=genus, group=genus)) + #grouping enables keeping the same sorting of taxonomic units
+    geom_bar(stat="identity", colour="white", linewidth=0.1) + #plot stacked bars with white borders
+    facet_nested(~factor(environment, labels=c("low" = "Low altitude", "high" = "High altitude")),  scales="free") + #facet per day and treatment
+    guides(fill = guide_legend(ncol = 1)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.ticks.x = element_blank(),
+          axis.title.x = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(size = 12, lineheight = 0.6,face="bold"),
+          axis.line = element_line(linewidth = 0.5, linetype = "solid", colour = "black")) +
+   labs(fill="Genera",y = "Relative abundance",x="Samples")
+```
 
 **Number of MAGs without genera-level annotation**
 ```{r skin_nongenera, comment="", echo=FALSE, message=FALSE, warning=FALSE}

@@ -54,6 +54,7 @@ structural_zeros <- genome_counts_filt %>%
    dplyr::select(genome, present, average) %>%
    left_join(genome_metadata, by=join_by(genome==genome)) %>%
    arrange(present,-average)
+structural_zeros
 ```
 
 ```{r structu_Zero_plot_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE}

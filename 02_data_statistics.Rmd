@@ -36,11 +36,18 @@ sequence_fractions %>%
   rename("Sample"=1, "Low quality"=2, "Mapped to host"=3, "Unmapped"=4, "Mapped to MAGs"=5) %>%
   tt()
 
+#mean
 sequence_fractions %>%
   mutate_at(vars(-sample), ~./1000000000) %>%
   rename("Sample"=1, "Low quality"=2, "Mapped to host"=3, "Unmapped"=4, "Mapped to MAGs"=5) %>%
   summarise(across(where(is.numeric), mean, na.rm = TRUE)) %>%
   tt()
+#SD
+sequence_fractions %>%
+  mutate_at(vars(-sample), ~./1000000000) %>%
+  rename("Sample"=1, "Low quality"=2, "Mapped to host"=3, "Unmapped"=4, "Mapped to MAGs"=5) %>%
+  summarise(across(where(is.numeric), sd, na.rm = TRUE)) %>% 
+  # tt()
 
 ```
 
@@ -144,11 +151,17 @@ sequence_fractions %>%
   mutate_at(vars(-sample), ~./1000000000) %>%
   rename("Sample"=1, "Low quality"=2, "Mapped to host"=3, "Unmapped"=4, "Mapped to MAGs"=5) %>%
   tt()
-
+#mean
 sequence_fractions %>%
   mutate_at(vars(-sample), ~./1000000000) %>%
   rename("Sample"=1, "Low quality"=2, "Mapped to host"=3, "Unmapped"=4, "Mapped to MAGs"=5) %>%
   summarise(across(where(is.numeric), mean, na.rm = TRUE)) %>%
+  tt()
+#SD
+sequence_fractions %>%
+  mutate_at(vars(-sample), ~./1000000000) %>%
+  rename("Sample"=1, "Low quality"=2, "Mapped to host"=3, "Unmapped"=4, "Mapped to MAGs"=5) %>%
+  summarise(across(where(is.numeric), sd, na.rm = TRUE)) %>% 
   tt()
 
 ```

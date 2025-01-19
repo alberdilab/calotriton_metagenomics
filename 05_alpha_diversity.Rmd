@@ -270,7 +270,7 @@ plot4 <- alpha_div %>%
 grid.arrange(arrangeGrob(plot1,plot2,plot3, plot4, ncol = 2))
 ```
 
-## Mixed models
+### Mixed models
 
 ```{r rich_MM, comment="", message=FALSE, warning=FALSE}
 alpha_div_meta <- alpha_div %>%
@@ -702,7 +702,7 @@ plot4 <- alpha_div %>%
 grid.arrange(arrangeGrob(plot1,plot2,plot3, plot4, ncol = 2))
 ```
 
-## Mixed models
+### Mixed models
 
 ```{r rich_MM_skin, comment="", message=FALSE, warning=FALSE}
 alpha_div_meta <- alpha_div %>%

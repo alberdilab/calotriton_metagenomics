@@ -1,7 +1,7 @@
 # Beta diversity
 ## Gut microbiota
 ```{r load_data_beta}
-#load("data/gut/data.Rdata")
+load("data/gut/data.Rdata")
 #load("data/gut/beta_all.Rdata")
 load("data/gut/beta_EHI02625.Rdata")
 sample_metadata<- sample_metadata %>% filter(sample!="EHI02625")
@@ -310,6 +310,8 @@ adonis2(beta_q0n$S ~ environment+environment:river,
 ```{r permanova_neutral_skin, comment="", message=FALSE, warning=FALSE}
 #Neutral diversity
 betadisper(beta_q1n$S, sample_metadata$environment) %>% permutest(.) 
+betadisper(beta_q1n$S, sample_metadata$river) %>% permutest(., pairwise=TRUE) 
+
 adonis2(beta_q1n$S ~ environment+environment:river,
         by="terms",
         data = sample_metadata %>% arrange(match(sample,labels(beta_q1n$S))), 
@@ -321,7 +323,7 @@ adonis2(beta_q1n$S ~ environment+environment:river,
 pairwise.adonis(beta_q1n$S, sample_metadata$river, perm = 999)
 ```
 
-```{r permanova_phylo_skin, comment="", message=FALSE, warning=FALSE, eval=FALSE}
+```{r permanova_phylo_skin, comment="", message=FALSE, warning=FALSE}
 #Phylogenetic diversity
 betadisper(beta_q1p$S, sample_metadata$environment) %>% permutest(.) 
 adonis2(beta_q1p$S ~ environment+environment:river,
@@ -332,7 +334,7 @@ adonis2(beta_q1p$S ~ environment+environment:river,
         tt()
 ```
 
-```{r permanova_func_skin, comment="", message=FALSE, warning=FALSE, eval=FALSE}
+```{r permanova_func_skin, comment="", message=FALSE, warning=FALSE}
 #Functional diversity
 betadisper(beta_q1f$S, sample_metadata$environment) %>% permutest(.) 
 adonis2(beta_q1f$S ~ environment+environment:river,
@@ -347,7 +349,9 @@ pairwise.adonis(beta_q1f$S, sample_metadata$river, perm = 999)
 ```
 
 ### NMDS
-####Richness
+
+#### Richness
+
 ```{r beta_div_nmds_richness_plot_skin, comment="", message=FALSE, warning=FALSE, fig.height=7, fig.width=10, fig.fullwidth=TRUE}
 beta_q0n$S %>%
   vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>%
