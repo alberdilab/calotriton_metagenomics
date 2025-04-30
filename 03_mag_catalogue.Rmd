@@ -188,9 +188,7 @@ grid.arrange(grobs = list(genome_completeness,genome_biplot,genome_contamination
 
 ### Functional overview
 
-### Functional overview
-
-***Predicted genes***
+#### Predicted genes
 ```{r predicted_stats_gut, message=FALSE, warning=FALSE}
 genome_annotations <- read_tsv("data/gut/genome_annotations.tsv.xz") %>%
     rename(gene=1, genome=2, contig=3)
@@ -202,7 +200,7 @@ pred_genes <- genome_annotations %>%
 cat(pred_genes)
 ```
 
-***Number of annotated genes and percentages***
+#### Number of annotated genes and percentages
 ```{r annotation_stats_gut, message=FALSE, warning=FALSE, fig.height=10, fig.width=10, fig.fullwidth=TRUE}
 
 # Some annotation
@@ -216,7 +214,7 @@ cat(genome_annota)
 genome_annota*100/pred_genes
 ```
 
-***Number of KEGG annotatated genes and percentages***
+#### Number of KEGG annotatated genes and percentages
 ```{r kegg_stats_gut, message=FALSE, warning=FALSE, fig.height=10, fig.width=10, fig.fullwidth=TRUE}
 # KEGG annotation
 kegg_annota <- genome_annotations %>%
@@ -275,7 +273,8 @@ function_tree
 
 ```{r function_ordination, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
 # Generate the tSNE ordination
-tSNE_function <- Rtsne(X=function_table, dims = 2, check_duplicates = FALSE)
+set.seed(1001)
+tSNE_function <- Rtsne(X=function_table, dims = 2, perplexity = 13, check_duplicates = FALSE)
 
 # Plot the ordination
 function_ordination <- tSNE_function$Y %>%
@@ -287,6 +286,8 @@ function_ordination <- tSNE_function$Y %>%
                 ggplot(aes(x = tSNE1, y = tSNE2, color = phylum, size=length))+
                             geom_point(shape=16, alpha=0.7) +
                             scale_color_manual(values=phylum_colors) +
+                            ylim(-30,40)+
+                            xlim(-40,40)+
                             theme_minimal() +
                 labs(color="Phylum", size="Genome size") +
                 guides(color = guide_legend(override.aes = list(size = 5))) # enlarge Phylum dots in legend
@@ -467,7 +468,8 @@ grid.arrange(grobs = list(genome_completeness,genome_biplot,genome_contamination
 
 ### Functional overview
 
-***Predicted genes***
+#### Predicted genes
+
 ```{r predicted_stats_skin, message=FALSE, warning=FALSE}
 genome_annotations <- read_tsv("data/skin/genome_annotations.tsv.xz") %>%
     rename(gene=1, genome=2, contig=3)
@@ -479,7 +481,8 @@ pred_genes <- genome_annotations %>%
 cat(pred_genes)
 ```
 
-***Number of annotated genes and percentages***
+#### Number of annotated genes and percentages
+
 ```{r annotation_stats_skin, message=FALSE, warning=FALSE}
 
 # Some annotation
@@ -493,7 +496,8 @@ cat(genome_annota)
 genome_annota*100/pred_genes
 ```
 
-***Number of KEGG annotatated genes and percentages***
+#### Number of KEGG annotatated genes and percentages
+
 ```{r kegg_stats_skin, message=FALSE, warning=FALSE}
 # KEGG annotation
 kegg_annota <- genome_annotations %>%
@@ -550,6 +554,7 @@ function_tree
 ```
 
 ### Functional ordination
+
 ```{r skin_function_ordination, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
 # Generate the tSNE ordination
 tSNE_function <- Rtsne(X=function_table, dims = 2, perplexity = 10, check_duplicates = FALSE)
@@ -570,8 +575,10 @@ function_ordination <- tSNE_function$Y %>%
 
 function_ordination
 ```
+
 ```{r skin_function_ordination_tsne, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
 # Generate the tSNE ordination
+set.seed(1001)
 tSNE_function <- Rtsne(X=function_table, dims = 2, perplexity = 13, check_duplicates = FALSE)
 
 # Plot the ordination
@@ -584,6 +591,8 @@ function_ordination <- tSNE_function$Y %>%
                 ggplot(aes(x = tSNE1, y = tSNE2, color = phylum, size=length))+
                             geom_point(shape=16, alpha=0.7) +
                             scale_color_manual(values=phylum_colors) +
+                            ylim(-30,40)+
+                            xlim(-40,40)+
                             theme_minimal() +
                 labs(color="Phylum", size="Genome size") +
                 guides(color = guide_legend(override.aes = list(size = 5))) # enlarge Phylum dots in legend
@@ -592,47 +601,34 @@ function_ordination
 ```
 
 
-### Combined ordination
+## Functionality differences
+
 ```{r combined_ordination, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
 load("data/gut/data.Rdata")
-function_table_gut <- genome_gifts_raw %>%
+function_table_gut <- genome_gifts %>%
     to.elements(., GIFT_db) %>%
-    data.frame()
+    data.frame() %>%
+    rownames_to_column(var="genome") %>% 
+    pivot_longer(!genome,names_to="trait", values_to="value") %>% 
+    mutate(community="gut")
 
 genome_metadata_gut<- genome_metadata
 
 load("data/skin/data.Rdata")
 function_table_skin <- genome_gifts %>%
     to.elements(., GIFT_db) %>%
-    data.frame()
+    data.frame() %>%
+    rownames_to_column(var="genome") %>% 
+    pivot_longer(!genome, names_to="trait", values_to="value") %>% 
+    mutate(community="skin")
 
-genome_metadata_skin<- genome_metadata
+genome_metadata_skin <- genome_metadata
 
-function_table <- bind_rows(function_table_gut,function_table_skin)
+bind_rows(function_table_gut,function_table_skin) %>% 
+    filter(str_starts(trait, "B10")) %>% 
+    ggplot(aes(y=value,x=community,group=community)) +
+      geom_boxplot() +
+      geom_jitter()
 
-tSNE_function <- function_table %>%
-   Rtsne(X=., dims = 2, check_duplicates = FALSE)
 
-genome_metadata <- bind_rows(genome_metadata_gut %>% mutate(type="gut"),genome_metadata_skin %>% mutate(type="skin"))
-
-phylum_colors <- read_tsv("https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv") %>%
-    right_join(genome_metadata, by=join_by(phylum == phylum)) %>%
-    arrange(match(genome, genome_tree$tip.label)) %>%
-    select(phylum, colors) %>%
-    unique() %>%
-    arrange(phylum) %>%
-    pull(colors, name=phylum)
-
-tSNE_function$Y %>%
-                as.data.frame() %>%
-                mutate(genome=rownames(function_table)) %>%
-                inner_join(genome_metadata, by="genome") %>%
-                rename(tSNE1="V1", tSNE2="V2") %>%
-                select(genome,phylum,tSNE1,tSNE2, length, type) %>%
-                ggplot(aes(x = tSNE1, y = tSNE2, color = phylum, size=length, shape=type))+
-                            geom_point(alpha=0.7) +
-                            scale_color_manual(values=phylum_colors) +
-                            theme_minimal() +
-                labs(color="Phylum", size="Genome size") +
-                guides(color = guide_legend(override.aes = list(size = 5)))
 ```

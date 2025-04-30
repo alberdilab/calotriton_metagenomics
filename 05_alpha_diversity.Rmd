@@ -37,28 +37,12 @@ phylogenetic <- genome_counts_filt %>%
   dplyr::rename(phylogenetic = 1) %>%
   rownames_to_column(var = "sample")
 
-# Aggregate basal GIFT into elements
-dist <- genome_gifts %>%
-  to.elements(., GIFT_db) %>%
-  traits2dist(., method = "gower")
-
-functional <- genome_counts_filt %>%
-  filter(genome %in% rownames(dist)) %>% 
-  column_to_rownames(var = "genome") %>%
-  dplyr::select(where(~ !all(. == 0))) %>%
-  hilldiv(., q = 1, dist = dist) %>%
-  t() %>%
-  as.data.frame() %>%
-  dplyr::rename(functional = 1) %>%
-  rownames_to_column(var = "sample") %>%
-  mutate(functional = if_else(is.nan(functional), 1, functional))
-
 # Merge all metrics
 alpha_div <- richness %>%
   full_join(neutral, by = join_by(sample == sample)) %>%
-  full_join(phylogenetic, by = join_by(sample == sample)) %>%
-  full_join(functional, by = join_by(sample == sample))
+  full_join(phylogenetic, by = join_by(sample == sample)) 
 ```
+
 ```{r alpha_div_diets_summary_all, comment="",echo=FALSE, message=FALSE, warning=FALSE}
 alpha_div %>%
   pivot_longer(-sample, names_to = "alpha", values_to = "value") %>%
@@ -147,31 +131,10 @@ plot3 <- alpha_div %>%
     )+
   labs(y = "Phylogenetic alpha diversity")
 
-
-plot4 <- alpha_div %>%
-  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
-  left_join(., sample_metadata, by = join_by(sample == sample)) %>%
-  filter(metric=="functional") %>%
-  ggplot(aes(y = value, x = environment, group=environment, color=environment, fill=environment)) +
-  geom_jitter(width = 0.2, show.legend = FALSE) +
-  geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE) +
-  scale_color_manual(values=treatment_colors)+
-  scale_fill_manual(values=treatment_colors) +
-  scale_x_discrete(labels=c("low" = "Low-altitude", "high" = "High-altitude")) +
-  stat_compare_means(method = "wilcox.test", show.legend = F, size = 3, label.y = c(2), label.x = c(1.5))+
-  coord_cartesian(xlim = c(1, NA)) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    strip.background = element_blank(),
-    panel.grid.minor.x = element_line(size = .1, color = "grey"),
-    axis.text = element_text(size=10),
-    axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))
-    )+
-  labs(y = "Functional alpha diversity")
 ```
+
 ```{r div_plot_together, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
-grid.arrange(arrangeGrob(plot1,plot2,plot3, plot4, ncol = 2))
+grid.arrange(arrangeGrob(plot1,plot2,plot3, ncol = 3))
 ```
 
 ```{r alpha_div_boxplot_river, comment="", message=FALSE, warning=FALSE, fig.height=3, fig.width=10, fig.fullwidth=TRUE}
@@ -243,31 +206,10 @@ plot3 <- alpha_div %>%
     )+
   labs(y = "Phylogenetic alpha diversity")
 
-
-plot4 <- alpha_div %>%
-  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
-  left_join(., sample_metadata, by = join_by(sample == sample)) %>%
-  filter(metric=="functional") %>%
-  ggplot(aes(y = value, x = river, group=river, color=environment, fill=environment)) +
-  geom_jitter(width = 0.2, show.legend = FALSE) +
-  geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE) +
-  scale_color_manual(values=treatment_colors)+
-  scale_fill_manual(values=treatment_colors) +
-  facet_grid(~factor(environment, labels=c("low" = "Low-altitude", "high" = "High-altitude")), scale="free", space = "free")+
-  coord_cartesian(xlim = c(1, NA)) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(size = 12, lineheight = 0.6),
-    panel.grid.minor.x = element_line(size = .1, color = "grey"),
-    axis.text = element_text(size=10),
-    axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))
-    )+
-  labs(y = "Functional alpha diversity")
 ```
+
 ```{r div_plot_together_river, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
-grid.arrange(arrangeGrob(plot1,plot2,plot3, plot4, ncol = 2))
+grid.arrange(arrangeGrob(plot1,plot2,plot3, ncol = 2))
 ```
 
 ### Mixed models
@@ -318,21 +260,6 @@ emmeans(Model_phylogenetic_river_random, pairwise ~ river)
 
 ```
 
-```{r funct_MM, comment="", message=FALSE, warning=FALSE}
-Model_functional_random <- lme(fixed = functional ~ environment, data = alpha_div_meta,
-               random = ~ 1 | river)
-summary(Model_functional_random)
-
-Model_functional<- lm(formula = functional ~ environment+river, data = alpha_div_meta) 
-summary(Model_functional)
-
-Model_functional_river_random <- lme(fixed = functional ~ river, data = alpha_div_meta,
-               random = ~ 1 | environment)
-summary(Model_functional_river_random)
-emmeans(Model_functional_river_random, pairwise ~ river)
-```
-
-
 ## Skin microbiota
 
 ```{r load_skin_data_alpha}
@@ -369,28 +296,12 @@ phylogenetic <- genome_counts_filt %>%
   dplyr::rename(phylogenetic = 1) %>%
   rownames_to_column(var = "sample")
 
-# Aggregate basal GIFT into elements
-dist <- genome_gifts %>%
-  to.elements(., GIFT_db) %>%
-  traits2dist(., method = "gower")
-
-functional <- genome_counts_filt %>%
-  filter(genome %in% rownames(dist)) %>% 
-  column_to_rownames(var = "genome") %>%
-  dplyr::select(where(~ !all(. == 0))) %>%
-  hilldiv(., q = 1, dist = dist) %>%
-  t() %>%
-  as.data.frame() %>%
-  dplyr::rename(functional = 1) %>%
-  rownames_to_column(var = "sample") %>%
-  mutate(functional = if_else(is.nan(functional), 1, functional))
-
 # Merge all metrics
 alpha_div <- richness %>%
   full_join(neutral, by = join_by(sample == sample)) %>%
-  full_join(phylogenetic, by = join_by(sample == sample)) %>%
-  full_join(functional, by = join_by(sample == sample))
+  full_join(phylogenetic, by = join_by(sample == sample))
 ```
+
 ```{r alpha_div_diets_summary_env, comment="",echo=FALSE, message=FALSE, warning=FALSE}
 alpha_div %>%
   pivot_longer(-sample, names_to = "alpha", values_to = "value") %>%
@@ -479,31 +390,10 @@ plot3 <- alpha_div %>%
     )+
   labs(y = "Phylogenetic alpha diversity")
 
-
-plot4 <- alpha_div %>%
-  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
-  left_join(., sample_metadata, by = join_by(sample == sample)) %>%
-  filter(metric=="functional") %>%
-  ggplot(aes(y = value, x = environment, group=environment, color=environment, fill=environment)) +
-  geom_jitter(width = 0.2, show.legend = FALSE) +
-  geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE) +
-  scale_color_manual(values=treatment_colors)+
-  scale_fill_manual(values=treatment_colors) +
-  scale_x_discrete(labels=c("low" = "Low-altitude", "high" = "High-altitude")) +
-  stat_compare_means(method = "wilcox.test", show.legend = F, size = 3, label.y = c(3), label.x = c(1.5))+
-  coord_cartesian(xlim = c(1, NA)) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    strip.background = element_blank(),
-    panel.grid.minor.x = element_line(size = .1, color = "grey"),
-    axis.text = element_text(size=10),
-    axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))
-    )+
-  labs(y = "Functional alpha diversity")
 ```
+
 ```{r div_plot_together_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
-grid.arrange(arrangeGrob(plot1,plot2,plot3, plot4, ncol = 2))
+grid.arrange(arrangeGrob(plot1,plot2,plot3, ncol = 3))
 ```
 
 ```{r alpha_div_boxplot_river_skin, comment="", message=FALSE, warning=FALSE, fig.height=3, fig.width=10, fig.fullwidth=TRUE, eval=FALSE}
@@ -575,33 +465,12 @@ plot3 <- alpha_div %>%
     )+
   labs(y = "Phylogenetic alpha diversity")
 
-
-plot4 <- alpha_div %>%
-  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
-  left_join(., sample_metadata, by = join_by(sample == sample)) %>%
-  filter(metric=="functional") %>%
-  ggplot(aes(y = value, x = river, group=river, color=environment, fill=environment)) +
-  geom_jitter(width = 0.2, show.legend = FALSE) +
-  geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE) +
-  scale_color_manual(values=treatment_colors)+
-  scale_fill_manual(values=treatment_colors) +
-  facet_grid(~factor(environment, labels=c("low" = "Low-altitude", "high" = "High-altitude")), scale="free", space = "free")+
-  coord_cartesian(xlim = c(1, NA)) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(size = 12, lineheight = 0.6),
-    panel.grid.minor.x = element_line(size = .1, color = "grey"),
-    axis.text = element_text(size=10),
-    axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))
-    )+
-  labs(y = "Functional alpha diversity")
 ```
 
 ```{r div_plot_together_river_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
-grid.arrange(arrangeGrob(plot1,plot2,plot3, plot4, ncol = 2))
+grid.arrange(arrangeGrob(plot1,plot2,plot3, ncol = 3))
 ```
+
 ```{r alpha_div_boxplot_position_skin, comment="", message=FALSE, warning=FALSE, fig.height=3, fig.width=10, fig.fullwidth=TRUE, eval=FALSE}
 #Richness
 plot1 <- alpha_div %>%
@@ -675,31 +544,10 @@ plot3 <- alpha_div %>%
   labs(y = "Phylogenetic alpha diversity")
 
 
-plot4 <- alpha_div %>%
-  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
-  left_join(., sample_metadata, by = join_by(sample == sample)) %>%
-  filter(metric=="functional") %>%
-  ggplot(aes(y = value, x = position, group=position, color=environment, fill=environment)) +
-  geom_jitter(position = position_dodge(width = 0.5), show.legend = FALSE) +
-  geom_boxplot(width = 0.5, alpha=0.5,outlier.shape = NA, show.legend = FALSE)  +
-  geom_line(aes(group = capture_id_flat), show.legend = FALSE)+
-  scale_color_manual(values=treatment_colors)+
-  scale_fill_manual(values=treatment_colors) +
-  facet_grid(~factor(environment, labels=c("low" = "Low-altitude", "high" = "High-altitude")), scale="free", space = "free")+
-  coord_cartesian(xlim = c(1, NA)) +
-  theme_classic() +
-  theme(
-    axis.title.x = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(size = 12, lineheight = 0.6),
-    panel.grid.minor.x = element_line(size = .1, color = "grey"),
-    axis.text = element_text(size=10),
-    axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))
-    )+
-  labs(y = "Functional alpha diversity") 
 ```
+
 ```{r div_plot_together_position_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
-grid.arrange(arrangeGrob(plot1,plot2,plot3, plot4, ncol = 2))
+grid.arrange(arrangeGrob(plot1,plot2,plot3, ncol = 2))
 ```
 
 ### Mixed models
@@ -748,18 +596,4 @@ Model_phylogenetic_river_random <- lme(fixed = phylogenetic ~ river, data = alph
 summary(Model_phylogenetic_river_random)
 emmeans(Model_phylogenetic_river_random, pairwise ~ river)
 
-```
-
-```{r funct_MM_skin, comment="", message=FALSE, warning=FALSE}
-Model_functional_random <- lme(fixed = functional ~ environment, data = alpha_div_meta,
-               random = ~ 1 | river)
-summary(Model_functional_random)
-
-Model_functional<- lm(formula = functional ~ environment+river, data = alpha_div_meta) 
-summary(Model_functional)
-
-Model_functional_river_random <- lme(fixed = functional ~ river, data = alpha_div_meta,
-               random = ~ 1 | environment)
-summary(Model_functional_river_random)
-emmeans(Model_functional_river_random, pairwise ~ river)
 ```

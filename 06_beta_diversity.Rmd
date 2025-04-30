@@ -68,13 +68,14 @@ save(beta_q0n,
 
 ```{r}
 set.seed(2024)
+load("data/gut/beta_EHI02625_EHI02632.Rdata")
 ```
 
 ### Permanova
 ```{r permanova, comment="", message=FALSE, warning=FALSE}
 #Richness
 betadisper(beta_q0n$S, sample_metadata$environment) %>% permutest(.) 
-adonis2(beta_q0n$S ~ environment+environment:river,
+adonis2(beta_q0n$S ~ environment+river,
         by="terms", 
         data = sample_metadata %>% arrange(match(sample,labels(beta_q0n$S))), 
         permutations = 999) %>%
@@ -85,13 +86,14 @@ adonis2(beta_q0n$S ~ environment+environment:river,
 ```{r permanova_neutral, comment="", message=FALSE, warning=FALSE}
 #Neutral diversity
 betadisper(beta_q1n$S, sample_metadata$environment) %>% permutest(.) 
-adonis2(beta_q1n$S ~ environment+environment:river,
+adonis2(beta_q1n$S ~ environment+river,
         by="terms",
         data = sample_metadata %>% arrange(match(sample,labels(beta_q1n$S))), 
         permutations = 999) %>%
         broom::tidy() %>%
         tt()
 ```
+
 ```{r pairwise_neutral, comment="", message=FALSE, warning=FALSE}
 pairwise.adonis(beta_q1n$S, sample_metadata$river, perm = 999)
 ```
@@ -99,7 +101,7 @@ pairwise.adonis(beta_q1n$S, sample_metadata$river, perm = 999)
 ```{r permanova_phylo, comment="", message=FALSE, warning=FALSE}
 #Phylogenetic diversity
 betadisper(beta_q1p$S, sample_metadata$environment) %>% permutest(.) 
-adonis2(beta_q1p$S ~ environment+environment:river,
+adonis2(beta_q1p$S ~ environment+river,
         by="terms",
         data = sample_metadata %>% arrange(match(sample,labels(beta_q1p$S))), 
         permutations = 999) %>%
@@ -110,13 +112,14 @@ adonis2(beta_q1p$S ~ environment+environment:river,
 ```{r permanova_func, comment="", message=FALSE, warning=FALSE}
 #Functional diversity
 betadisper(beta_q1f$S, sample_metadata$environment) %>% permutest(.) 
-adonis2(beta_q1f$S ~ environment+environment:river,
+adonis2(beta_q1f$S ~ environment+river,
         by="terms", 
         data = sample_metadata %>% arrange(match(sample,labels(beta_q1f$S))), 
         permutations = 999) %>%
         broom::tidy() %>%
         tt()
 ```
+
 ```{r pairwise_func, comment="", message=FALSE, warning=FALSE}
 pairwise.adonis(beta_q1f$S, sample_metadata$river, perm = 999)
 ```
@@ -299,53 +302,50 @@ save(beta_q0n,
 ### Permanova
 ```{r permanova_skin, comment="", message=FALSE, warning=FALSE}
 #Richness
-betadisper(beta_q0n$S, sample_metadata$environment) %>% permutest(.) 
+betadisper(beta_q0n$S, 
+           sample_metadata %>% filter(sample %in% labels(beta_q0n$S)) %>% arrange(match(sample,labels(beta_q0n$S))) %>% pull(environment)
+           ) %>% permutest(.) 
+
 adonis2(beta_q0n$S ~ environment+environment:river,
         by="terms", 
-        data = sample_metadata %>% arrange(match(sample,labels(beta_q0n$S))), 
+        data = sample_metadata %>% filter(sample %in% labels(beta_q0n$S)) %>% arrange(match(sample,labels(beta_q0n$S))), 
         permutations = 999) %>%
         broom::tidy() %>%
         tt()
 ```
+
 ```{r permanova_neutral_skin, comment="", message=FALSE, warning=FALSE}
 #Neutral diversity
-betadisper(beta_q1n$S, sample_metadata$environment) %>% permutest(.) 
-betadisper(beta_q1n$S, sample_metadata$river) %>% permutest(., pairwise=TRUE) 
+betadisper(beta_q1n$S, 
+           sample_metadata %>% filter(sample %in% labels(beta_q1n$S)) %>% arrange(match(sample,labels(beta_q1n$S))) %>% pull(environment)
+           ) %>% permutest(.) 
 
 adonis2(beta_q1n$S ~ environment+environment:river,
         by="terms",
-        data = sample_metadata %>% arrange(match(sample,labels(beta_q1n$S))), 
+        data = sample_metadata %>% filter(sample %in% labels(beta_q1n$S)) %>% arrange(match(sample,labels(beta_q1n$S))), 
         permutations = 999) %>%
         broom::tidy() %>%
         tt()
 ```
+
 ```{r pairwise_neutral_skin, comment="", message=FALSE, warning=FALSE}
-pairwise.adonis(beta_q1n$S, sample_metadata$river, perm = 999)
+pairwise.adonis(beta_q1n$S, 
+                sample_metadata %>% filter(sample %in% labels(beta_q1n$S)) %>% arrange(match(sample,labels(beta_q1n$S))) %>% pull(river), 
+                perm = 999)
 ```
 
 ```{r permanova_phylo_skin, comment="", message=FALSE, warning=FALSE}
 #Phylogenetic diversity
-betadisper(beta_q1p$S, sample_metadata$environment) %>% permutest(.) 
+betadisper(beta_q1p$S, 
+           sample_metadata %>% filter(sample %in% labels(beta_q1p$S)) %>% arrange(match(sample,labels(beta_q1p$S))) %>% pull(environment)
+           ) %>% permutest(.) 
+
 adonis2(beta_q1p$S ~ environment+environment:river,
         by="terms",
-        data = sample_metadata %>% arrange(match(sample,labels(beta_q1p$S))), 
+        data = sample_metadata %>% filter(sample %in% labels(beta_q1p$S)) %>% arrange(match(sample,labels(beta_q1p$S))), 
         permutations = 999) %>%
         broom::tidy() %>%
         tt()
-```
-
-```{r permanova_func_skin, comment="", message=FALSE, warning=FALSE}
-#Functional diversity
-betadisper(beta_q1f$S, sample_metadata$environment) %>% permutest(.) 
-adonis2(beta_q1f$S ~ environment+environment:river,
-        by="terms", 
-        data = sample_metadata %>% arrange(match(sample,labels(beta_q1f$S))), 
-        permutations = 999) %>%
-        broom::tidy() %>%
-        tt()
-```
-```{r pairwise_func_skin, comment="", message=FALSE, warning=FALSE}
-pairwise.adonis(beta_q1f$S, sample_metadata$river, perm = 999)
 ```
 
 ### NMDS

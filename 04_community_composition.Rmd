@@ -92,6 +92,7 @@ phylum_summary %>%
     arrange(-total_mean) %>% 
     dplyr::select(phylum,Total,High,Low)
 ```
+
 ```{r taxonomy_jitterplot_phylum, warning=FALSE, comments="", message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
 phylum_arrange <- phylum_summary %>%
     group_by(phylum) %>%
@@ -299,11 +300,13 @@ genus_summary %>%
 
 ```{r taxonomy_jitterplot_genus, fig.height=14, fig.width=10, fig.fullwidth=TRUE}
 genus_summary_sort <- genus_summary %>%
+    filter(genus != "g__") %>% 
     group_by(genus) %>%
     summarise(mean=mean(relabun, na.rm=T),sd=sd(relabun, na.rm=T)) %>%
     arrange(-mean) 
 
 genus_summary %>%
+  filter(genus %in% genus_summary_sort$genus[1:20]) %>% 
   mutate(genus=factor(genus, levels=rev(genus_summary_sort %>% pull(genus)))) %>%
   filter(relabun > 0) %>%
   ggplot(aes(x=relabun, y=genus, group=genus, color=phylum)) +
@@ -395,7 +398,7 @@ load("data/skin/data.Rdata")
 genome_counts_filt %>%
   mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
   pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
-  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  left_join(genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
   left_join(., sample_metadata, by = join_by(sample == sample)) %>% #append sample metadata
   filter(count > 0) %>% #filter 0 counts
   ggplot(., aes(x=sample,y=count, fill=phylum, group=phylum)) + #grouping enables keeping the same sorting of taxonomic units
@@ -505,9 +508,10 @@ low_samples <- sample_metadata %>%
   pull()
 
 low_genomes <- genome_counts_filt %>% 
-  column_to_rownames("genome") %>% 
-  select(all_of(low_samples)) %>%
   as.data.frame() %>%
+  remove_rownames() %>% 
+  column_to_rownames(var="genome") %>% 
+  select(all_of(low_samples)) %>%
   filter(rowSums(across(where(is.numeric)))!=0)%>% 
   rownames_to_column("genome")%>% 
   dplyr::select(genome) %>% 
@@ -533,9 +537,10 @@ high_samples <- sample_metadata %>%
   pull()
 
 high_genomes <- genome_counts_filt %>% 
+  as.data.frame() %>%
+  remove_rownames() %>% 
   column_to_rownames("genome") %>% 
   select(all_of(high_samples)) %>%
-  as.data.frame() %>%
   filter(rowSums(across(where(is.numeric)))!=0)%>% 
   rownames_to_column("genome")%>% 
   dplyr::select(genome) %>% 
@@ -705,6 +710,7 @@ genome_counts_filt %>%
 ```{r phyloseq_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 #Phyloseq object
 count_phy <- genome_counts_filt %>%
+  remove_rownames() %>% 
   column_to_rownames(var="genome")%>%
   otu_table(., taxa_are_rows=T)
 
@@ -746,7 +752,7 @@ significant_family_table <- family[, colnames(family) %in% significant_family$Fa
   left_join(., sample_metadata[c(1,10)], by = join_by(sample == sample))%>%
   select(-sample)
 
-ggplot(significant_family_table, aes(x=environment, y=f__Methylophilaceae, color = environment, fill=environment)) +
+ggplot(significant_family_table, aes(x=environment, y=f__Spirosomaceae, color = environment, fill=environment)) +
     geom_boxplot(alpha = 0.2, outlier.shape = NA, width = 0.3, show.legend = FALSE) +
   geom_jitter(width = 0.1, show.legend = TRUE) +
   theme_minimal() +
@@ -789,11 +795,13 @@ genus_summary %>%
 
 ```{r skin_taxonomy_jitterplot_genus, fig.height=14, fig.width=10, fig.fullwidth=TRUE}
 genus_summary_sort <- genus_summary %>%
+    filter(genus != "g__") %>% 
     group_by(genus) %>%
     summarise(mean=mean(relabun, na.rm=T),sd=sd(relabun, na.rm=T)) %>%
     arrange(-mean) 
 
 genus_summary %>%
+  filter(genus %in% genus_summary_sort$genus[1:20]) %>% 
   mutate(genus=factor(genus, levels=rev(genus_summary_sort %>% pull(genus)))) %>%
   filter(relabun > 0) %>%
   ggplot(aes(x=relabun, y=genus, group=genus, color=phylum)) +

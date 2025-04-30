@@ -1,0 +1,1055 @@
+# Source of functional differences
+
+```{r functional_difference_source_load_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+load("data/gut/data.Rdata")
+
+environment_prevalence <- genome_counts_filt %>% 
+  pivot_longer(!genome,names_to = "sample",values_to = "counts") %>% 
+  filter(sample!="EHI02625") %>% 
+  left_join(sample_metadata,by="sample") %>% 
+  group_by(environment) %>% 
+  mutate(sample_size = n_distinct(sample), .groups = "drop") %>% 
+  group_by(genome,environment) %>%
+  summarise(presence = sum(counts > 0, na.rm = TRUE), 
+            sample_size = mean(sample_size),
+            mean = mean(counts),
+            river = n_distinct(river[counts > 0]),
+            .groups = "drop") %>% 
+  mutate(prevalence=presence/sample_size)
+
+# Must be present in at least 20% of samples
+core_microbiota_prevalence <- environment_prevalence %>% 
+  select(genome,environment,prevalence) %>% 
+  pivot_wider(names_from = "environment",values_from="prevalence") %>% 
+  mutate(type_prevalence = case_when(
+      high > 0 & low > 0 ~ "core",
+      high == 0 & low > 0.2 ~ "endemic",
+      high >= 0.2 & low == 0 ~ "endemic",
+      high == 0 & low <= 0.2 ~ "marginal",
+      high <= 0.2 & low == 0 ~ "marginal",
+      high == 0 & low == 0 ~ "absent"
+    )) %>% 
+  mutate(type_prevalence_environment = case_when(
+      high > 0 & low > 0 ~ "core",
+      high == 0 & low > 0.2 ~ "low",
+      high >= 0.2 & low == 0 ~ "high",
+      high == 0 & low <= 0.2 ~ "low",
+      high <= 0.2 & low == 0 ~ "high",
+      high == 0 & low == 0 ~ "absent"
+    ))
+
+# Must be present in both rivers
+core_microbiota_river <- environment_prevalence %>% 
+  select(genome,environment,river) %>% 
+  pivot_wider(names_from = "environment",values_from="river") %>% 
+  mutate(type_river = case_when(
+      high >= 1 & low >= 1 ~ "core",
+      high == 0 & low == 2 ~ "endemic",
+      high == 2 & low == 0 ~ "endemic",
+      high == 0 & low >= 1 ~ "marginal",
+      high >= 1 & low == 0 ~ "marginal",
+      high == 0 & low == 0 ~ "absent"
+    )) %>% 
+  mutate(type_river_environment = case_when(
+      high >= 1 & low >= 1 ~ "core",
+      high == 0 & low == 2 ~ "low",
+      high == 2 & low == 0 ~ "high",
+      high == 0 & low >= 1 ~ "low",
+      high >= 1 & low == 0 ~ "high",
+      high == 0 & low == 0 ~ "absent"
+    ))
+
+# Merge both criteria
+core_microbiota <- inner_join(core_microbiota_prevalence %>% select(genome,type_prevalence,type_prevalence_environment),core_microbiota_river %>% select(genome,type_river),by="genome") %>% 
+  mutate(match = ifelse(type_prevalence == type_river, 1, 0)) %>% 
+  mutate(type= case_when(
+      type_prevalence == "core" & type_river == "core" ~ "core",
+      type_prevalence == "endemic" & type_river == "endemic" ~ "endemic",
+      type_prevalence == "marginal" & type_river == "endemic" ~ "marginal",
+      type_prevalence == "endemic" & type_river == "marginal" ~ "marginal",
+      type_prevalence == "marginal" & type_river == "marginal" ~ "marginal",
+      type_prevalence == "absent" & type_river == "absent" ~ "absent",
+    )
+  )
+```
+
+```{r microbiota_fractioning_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+core_microbiota %>% 
+  group_by(type_river) %>% 
+  summarise(count=n())
+```
+
+```{r microbiota_fractioning_plot_gut ,comment="", echo=FALSE, message=FALSE, warning=FALSE}
+partitioning_heatmap <- core_microbiota %>% 
+  select(genome,type) %>% 
+  column_to_rownames("genome")
+
+# Generate  basal tree
+partitioning_tree <- force.ultrametric(genome_tree, method="extend") %>%
+                ggtree(., size = 0.3)
+
+#Add phylum colors next to the tree tips
+function_tree <- gheatmap(partitioning_tree, partitioning_heatmap, offset=0, width=0.1, colnames=FALSE)
+```
+
+## Taxonomic variation
+
+```{r relative_abundance_distribution_gut, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  left_join(., sample_metadata, by = join_by(sample == sample)) %>% #append sample metadata
+  filter(count > 0) %>% #filter 0 counts
+  left_join(core_microbiota,by="genome") %>% 
+  group_by(type,sample) %>% 
+  summarise(fraction=sum(count)) %>% 
+  group_by(type) %>% 
+  summarise(mean(fraction))
+```
+
+## MAGs in different locations and shared among locations
+
+```{r chart1_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+locationcolors=c('#c4d7d1','#408892','#2d3749','#c04062','#6b3a59','#e08683')
+locationcolors=c('#c4d7d1','#408892','#c04062','#e08683')
+
+genome_counts_rel <- genome_counts %>%
+  mutate_at(vars(-genome),~./sum(.)) %>%
+  column_to_rownames(., "genome")
+
+genome_counts_rel_fil<- genome_counts_filt%>% 
+    select(one_of(c("genome",sample_metadata$sample))) %>% 
+  column_to_rownames(., "genome")
+  
+genome_counts_rel_pa=1*(genome_counts_rel_fil>0)
+#MAGrel_pa[1:6,1:6]
+table_upset_analysis_cont=t(aggregate(t(genome_counts_rel_pa),by=list(sample_metadata$river),FUN=sum)[,-1])
+colnames(table_upset_analysis_cont)=levels(as.factor(sample_metadata$river))
+table_upset_analysis=(table_upset_analysis_cont>0)*1
+table_upset_analysis=data.frame(table_upset_analysis)
+table_upset_analysis=apply(table_upset_analysis,2,as.integer)
+rownames(table_upset_analysis) <- rownames(genome_counts_rel_pa)
+
+#pdf("figures/MAG_intersection.pdf",width=8,height=6, onefile=F)
+upset(as.data.frame(table_upset_analysis),
+  keep.order = T,
+  sets = rev(c("Erlan","Harpea","Leitzaran","Goizueta")),
+  sets.bar.color= rev(locationcolors),
+  mb.ratio = c(0.55, 0.45), order.by = "freq")
+#dev.off()
+```
+
+
+### Core
+
+```{r core_taxonomy_barplot_gut, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  left_join(., sample_metadata, by = join_by(sample == sample)) %>% #append sample metadata
+  filter(count > 0) %>% #filter 0 counts
+  left_join(core_microbiota,by="genome") %>% 
+  filter(type=="core") %>% 
+  ggplot(., aes(x=sample,y=count, fill=phylum, group=phylum)) + #grouping enables keeping the same sorting of taxonomic units
+    geom_bar(stat="identity", colour="white", linewidth=0.1) + #plot stacked bars with white borders
+    scale_fill_manual(values=phylum_colors) +
+    facet_nested(~factor(environment, labels=c("low" = "Low altitude", "high" = "High altitude")),  scales="free") + #facet per day and treatment
+    guides(fill = guide_legend(ncol = 1)) +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.x = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(size = 12, lineheight = 0.6,face="bold"),
+          axis.line = element_line(linewidth = 0.5, linetype = "solid", colour = "black")) +
+   labs(fill="Phylum",y = "Relative abundance",x="Samples")
+```
+
+### Endemic
+
+```{r endemic_taxonomy_barplot_gut, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  left_join(., sample_metadata, by = join_by(sample == sample)) %>% #append sample metadata
+  filter(count > 0) %>% #filter 0 counts
+  left_join(core_microbiota,by="genome") %>% 
+  filter(type=="endemic") %>% 
+  ggplot(., aes(x=sample,y=count, fill=phylum, group=phylum)) + #grouping enables keeping the same sorting of taxonomic units
+    geom_bar(stat="identity", colour="white", linewidth=0.1) + #plot stacked bars with white borders
+    scale_fill_manual(values=phylum_colors) +
+    ylim(0,1)+
+    facet_nested(~factor(environment, labels=c("low" = "Low altitude", "high" = "High altitude")),  scales="free") + #facet per day and treatment
+    guides(fill = guide_legend(ncol = 1)) +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.x = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(size = 12, lineheight = 0.6,face="bold"),
+          axis.line = element_line(linewidth = 0.5, linetype = "solid", colour = "black")) +
+   labs(fill="Phylum",y = "Relative abundance",x="Samples")
+```
+
+### Marginal
+
+```{r marginal_taxonomy_barplot_gut, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  left_join(., sample_metadata, by = join_by(sample == sample)) %>% #append sample metadata
+  filter(count > 0) %>% #filter 0 counts
+  left_join(core_microbiota,by="genome") %>% 
+  filter(type=="marginal") %>% 
+  ggplot(., aes(x=sample,y=count, fill=phylum, group=phylum)) + #grouping enables keeping the same sorting of taxonomic units
+    geom_bar(stat="identity", colour="white", linewidth=0.1) + #plot stacked bars with white borders
+    ylim(0,1)+
+    scale_fill_manual(values=phylum_colors) +
+    facet_nested(~factor(environment, labels=c("low" = "Low altitude", "high" = "High altitude")),  scales="free") + #facet per day and treatment
+    guides(fill = guide_legend(ncol = 1)) +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.x = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(size = 12, lineheight = 0.6,face="bold"),
+          axis.line = element_line(linewidth = 0.5, linetype = "solid", colour = "black")) +
+   labs(fill="Phylum",y = "Relative abundance",x="Samples")
+```
+
+### Ordination
+
+```{r pcoa_ordination_gut, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
+gift_pcoa <- genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    as.data.frame() %>%
+    vegdist(method="euclidean") %>%
+    pcoa()
+
+gift_pcoa_rel_eigen <- gift_pcoa$values$Relative_eig[1:10]
+
+
+# Get genome positions
+gift_pcoa_vectors <- gift_pcoa$vectors %>% #extract vectors
+  as.data.frame() %>% 
+  select(Axis.1,Axis.2) # keep the first 2 axes
+
+gift_pcoa_eigenvalues <- gift_pcoa$values$Eigenvalues[c(1,2)]
+
+gift_pcoa_gifts <- cov(genome_gifts, scale(gift_pcoa_vectors)) %*% diag((gift_pcoa_eigenvalues/(nrow(genome_gifts)-1))^(-0.5)) %>%
+  as.data.frame() %>% 
+  rename(Axis.1=1,Axis.2=2) %>% 
+  rownames_to_column(var="label") %>% 
+  #get function summary vectors
+  mutate(func=substr(label,1,3)) %>% 
+  group_by(func) %>% 
+  summarise(Axis.1=mean(Axis.1),
+            Axis.2=mean(Axis.2)) %>% 
+  rename(label=func) %>% 
+  filter(!label %in% c("S01","S02","S03"))
+```
+
+```{r pcoa_ordination_plot_gut, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
+set.seed(101)
+scale <- 20 # scale for vector loadings
+gift_pcoa_vectors %>% 
+  rownames_to_column(var="genome") %>% 
+  left_join(genome_metadata, by="genome") %>%
+  ggplot() +
+      #genome positions
+      scale_color_manual(values=phylum_colors)+
+      geom_point(aes(x=Axis.1,y=Axis.2, color=phylum, size=length), 
+                 alpha=0.9, shape=16) +
+      #scale_color_manual(values=phylum_colors) +
+      scale_size_continuous(range = c(0.1,5)) +
+      #loading positions
+      geom_segment(data=gift_pcoa_gifts, 
+                   aes(x=0, y=0, xend=Axis.1 * scale, yend=Axis.2 * scale),
+                    arrow = arrow(length = unit(0.3, "cm"), 
+                    type = "open", 
+                    angle = 25),
+                    linewidth = 0.5, 
+                    color = "black") +
+     #Primary and secondary scale adjustments
+     scale_x_continuous(name = paste0("PCoA1 (",round(gift_pcoa_rel_eigen[1]*100, digits = 2), " %)"),
+                      sec.axis = sec_axis(~ . / scale, name = "Loadings on PCoA1")
+            ) +
+     scale_y_continuous(name = paste0("PCoA2 (",round(gift_pcoa_rel_eigen[2]*100, digits = 2), " %)"),
+                      sec.axis = sec_axis(~ . / scale, name = "Loadings on PCoA2")
+            ) +
+    geom_label_repel(data = gift_pcoa_gifts,
+                     aes(label = label, x = Axis.1 * scale, y = Axis.2 * scale),
+                     segment.color = 'transparent') +
+    xlim(-4.5,4.5) + 
+    ylim(-3,2.5) +
+    theme_minimal() + 
+    theme(legend.position = "none")
+```
+
+```{r pcoa_ordination_plot_enrichment_gut, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
+structural <- core_microbiota %>% 
+  mutate(type = case_when(
+      (type_prevalence == "endemic") & (type_prevalence_environment == "high") ~ "present_high",
+       (type_prevalence == "endemic") & (type_prevalence_environment == "low") ~ "present_low")) %>% 
+    filter(!is.na(type)) %>% 
+    select(genome,type)
+
+enriched <- ancom_mag_gut_table %>% 
+  mutate(type = case_when(
+      lfc_environmentlow < 0 ~ "enriched_low",
+      lfc_environmentlow >= 0 ~ "enriched_high")) %>% 
+  select(genome,type)
+
+
+scale <- 15 # scale for vector loadings
+gift_pcoa_vectors %>% 
+  rownames_to_column(var="genome") %>% 
+  left_join(bind_rows(structural,enriched), by="genome") %>%
+  left_join(genome_metadata, by="genome") %>%
+  mutate(type=ifelse(is.na(type),"neutral",type)) %>%
+  group_by(type) %>%
+  mutate(x_cen = median(Axis.1, na.rm = TRUE)) %>%
+  mutate(y_cen = median(Axis.2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot() +
+      scale_size_continuous(range = c(0.1,5)) +
+      geom_point(aes(x=Axis.1,y=Axis.2, color=type, size=length), alpha=0.9, shape=16) +
+      geom_segment(aes(x = x_cen, y = y_cen, xend = Axis.1, yend = Axis.2, color=type), alpha = 0.5) +
+      scale_color_manual(values=c("#5A99D2","#F16144","#B7B7B7","#225072","#8C2C1C"))+
+    theme_minimal() + 
+    theme(legend.position = "none")
+```
+
+```{r pcoa_ordination_plot_fractioning_gut, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
+scale <- 15 # scale for vector loadings
+gift_pcoa_vectors %>% 
+  rownames_to_column(var="genome") %>% 
+  left_join(core_microbiota, by="genome") %>%
+  left_join(genome_metadata, by="genome") %>%
+  filter(type != "absent") %>% 
+  mutate(shape = case_when(
+      type == "core" ~ "core",
+      type == "marginal" ~ "marginal",
+      type == "endemic" & type_prevalence_environment == "high" ~ "endemic_high",
+      type == "endemic" & type_prevalence_environment == "low" ~ "endemic_low"
+    )) %>% 
+  group_by(shape) %>%
+  mutate(x_cen = median(Axis.1, na.rm = TRUE)) %>%
+  mutate(y_cen = median(Axis.2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot() +
+      #genome positions
+      geom_segment(aes(x = x_cen, y = y_cen, xend = Axis.1, yend = Axis.2, color=shape), alpha = 0.5, show.legend = FALSE) +
+      scale_color_manual(values=c("#9E8F71","#5A99D2","#F16144","#B7B7B7"))+
+      theme_minimal() 
+   # theme(legend.position = "none")
+```
+## Functional variation
+
+### Core
+
+```{r gift_core_endemic_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+#Aggregate bundle-level GIFTs into the compound level
+GIFTs_elements <- to.elements(genome_gifts,GIFT_db)
+GIFTs_elements_filtered <- GIFTs_elements[rownames(GIFTs_elements) %in% genome_counts_filt$genome,]
+GIFTs_elements_filtered <- as.data.frame(GIFTs_elements_filtered) %>% 
+  select_if(~ !is.numeric(.) || sum(.) != 0)
+
+core_genomes <- core_microbiota %>% filter(type=="core") %>% pull(genome)
+endemic_genomes <- core_microbiota %>% filter(type=="endemic") %>% pull(genome)
+marginal_genomes <- core_microbiota %>% filter(type=="marginal") %>% pull(genome)
+
+genome_counts_core <- genome_counts_filt %>%
+  filter(genome %in% core_genomes) %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% 
+  column_to_rownames(., "genome") %>%
+  select_if(~ !all(. == 0)) %>%
+  filter(rowSums(.) != 0)        
+
+genome_counts_endemic <- genome_counts_filt %>%
+  filter(genome %in% endemic_genomes) %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% 
+  column_to_rownames(., "genome") %>%
+  select_if(~ !all(. == 0)) %>%
+  filter(rowSums(.) != 0)        
+
+genome_counts_marginal <- genome_counts_filt %>%
+  filter(genome %in% marginal_genomes) %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% 
+  column_to_rownames(., "genome") %>%
+  select_if(~ !all(. == 0)) %>%
+  filter(rowSums(.) != 0)        
+
+GIFTs_community_core <- to.community(GIFTs_elements_filtered[rownames(genome_counts_core),],genome_counts_core,GIFT_db) %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var="sample") %>% 
+  pivot_longer(!sample,names_to = "gift",values_to = "value")
+
+GIFTs_community_endemic <- to.community(GIFTs_elements_filtered[rownames(genome_counts_endemic),],genome_counts_endemic,GIFT_db) %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var="sample") %>% 
+  pivot_longer(!sample,names_to = "gift",values_to = "value")
+
+GIFTs_community_marginal <- to.community(GIFTs_elements_filtered[rownames(genome_counts_marginal),],genome_counts_marginal,GIFT_db) %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var="sample") %>% 
+  pivot_longer(!sample,names_to = "gift",values_to = "value")
+```
+
+```{r gift_core_test_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    group_by(gift) %>%
+    summarise(high=mean(value[environment == "high"], na.rm = TRUE),
+              low=mean(value[environment == "low"], na.rm = TRUE),
+              p_value = wilcox.test(value ~ environment)$p.value
+              ) %>%
+    mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
+    filter(p_adjust < 0.05)
+```
+
+```{r gift_core_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    rename(trait=gift,gift=value) %>% 
+    mutate(functionid = substr(trait, 1, 3)) %>%
+    mutate(trait = case_when(
+      trait %in% GIFT_db$Code_element ~ GIFT_db$Element[match(trait, GIFT_db$Code_element)],
+      TRUE ~ trait
+    )) %>%
+    mutate(functionid = case_when(
+      functionid %in% GIFT_db$Code_function ~ GIFT_db$Function[match(functionid, GIFT_db$Code_function)],
+      TRUE ~ functionid
+    )) %>%
+    mutate(trait=factor(trait,levels=unique(GIFT_db$Element))) %>%
+    mutate(functionid=factor(functionid,levels=unique(GIFT_db$Function))) %>%
+    ggplot(aes(x=sample,y=trait,fill=gift)) +
+        geom_tile(colour="white", linewidth=0.2)+
+        scale_fill_gradientn(colours=rev(c("#d53e4f", "#f46d43", "#fdae61", "#fee08b", "#e6f598", "#abdda4", "#ddf1da")))+
+        facet_grid(functionid ~ environment, scales="free",space="free") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+              axis.text.y = element_text(size=8),
+              strip.text.y = element_text(angle = 0)
+              ) +
+        labs(y="Traits",x="Samples",fill="GIFT")
+```
+```{r gift_core_mci_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    ggplot(aes(x=sample,y=mci)) +
+        geom_col() +
+        ylim(0,0.5) +
+        facet_grid(. ~ environment, scales="free",space="free")+
+        theme_minimal()
+```
+
+```{r gift_core_mci_boxplot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    ggplot(aes(x=environment,y=mci, group=environment)) +
+        geom_boxplot() +
+        ylim(0,0.5) +
+        theme_minimal()
+```
+
+```{r gift_core_mci_test_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    wilcox.test(mci ~ environment,.)
+```
+
+```{r gift_core_test_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_core_significance <- GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    group_by(gift) %>%
+    summarise(high=mean(value[environment == "high"], na.rm = TRUE),
+              low=mean(value[environment == "low"], na.rm = TRUE),
+              p_value = wilcox.test(value ~ environment)$p.value
+              ) %>%
+    mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
+    mutate(difference=high-low) %>%
+    mutate(significance = case_when(
+      p_adjust <= 0.05 ~ "significant",
+      p_adjust > 0.05 ~ "non-significant")) 
+
+GIFTs_community_core_significance %>% 
+      filter(significance == "significant")
+
+GIFTs_community_core_significance %>% 
+
+    ggplot(aes(y=forcats::fct_rev(factor(gift)),x=difference, fill=significance)) +
+      scale_fill_manual(values=c("#cccccc","#444444"))+
+      geom_col() + 
+      xlim(-0.25,0.25) +
+      theme_minimal()
+```
+
+```{r gift_core_permanova_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+community_core_dist <- GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    dist()
+  
+adonis2(community_core_dist ~ environment * river,
+        by="terms", 
+        data = sample_metadata %>%
+                filter(sample %in% labels(community_core_dist)) %>% 
+                arrange(match(sample,labels(community_core_dist))), 
+        permutations = 999) %>%
+        broom::tidy() %>%
+        tt()
+```
+
+```{r gift_core_pcoa_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+pcoa_core <- GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    vegdist(method="euclidean") %>%
+    pcoa()
+
+pcoa_core_rel_eigen <- pcoa_core$values$Relative_eig[1:10]
+
+pcoa_core_vectors <- pcoa_core$vectors %>% #extract vectors
+  as.data.frame() %>% 
+  select(Axis.1,Axis.2)
+
+pcoa_core_eigenvalues <- pcoa_core$values$Eigenvalues[c(1,2)]
+
+pcoa_core_traits <- cov(GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample"), scale(pcoa_core_vectors)) %*% diag((pcoa_core_eigenvalues/(nrow(GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample"))-1))^(-0.5)) %>%
+  as.data.frame() %>% 
+  rename(Axis.1=1,Axis.2=2) %>% 
+  rownames_to_column(var="label") %>% 
+  #get function summary vectors
+  mutate(func=substr(label,1,3)) %>% 
+  group_by(func) %>% 
+  summarise(Axis.1=mean(Axis.1),
+            Axis.2=mean(Axis.2)) %>% 
+  rename(label=func) %>% 
+  filter(!label %in% c("S01","S02","S03"))
+
+scale <- 15 # scale for vector loadings
+pcoa_core_vectors %>% 
+  rownames_to_column(var="sample") %>% 
+  left_join(sample_metadata, by="sample") %>%
+  ggplot() +
+      #genome positions
+      geom_point(aes(x=Axis.1,y=Axis.2, color=environment), 
+                 alpha=0.9, shape=16) +
+      #scale_color_manual(values=phylum_colors) +
+      scale_size_continuous(range = c(0.1,5)) +
+      #loading positions
+      geom_segment(data=pcoa_core_traits, 
+                   aes(x=0, y=0, xend=Axis.1 * scale, yend=Axis.2 * scale),
+                    arrow = arrow(length = unit(0.3, "cm"), 
+                    type = "open", 
+                    angle = 25),
+                    linewidth = 0.5, 
+                    color = "black") +
+     #Primary and secondary scale adjustments
+     scale_x_continuous(name = paste0("PCoA1 (",round(pcoa_core_rel_eigen[1]*100, digits = 2), " %)"),
+                      sec.axis = sec_axis(~ . / scale, name = "Loadings on PCoA1")
+            ) +
+     scale_y_continuous(name = paste0("PCoA2 (",round(pcoa_core_rel_eigen[2]*100, digits = 2), " %)"),
+                      sec.axis = sec_axis(~ . / scale, name = "Loadings on PCoA2")
+            ) +
+    geom_label_repel(data = pcoa_core_traits,
+                     aes(label = label, x = Axis.1 * scale, y = Axis.2 * scale),
+                     segment.color = 'transparent') +
+    theme_minimal()
+```
+
+```{r gift_core_ordination_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_core %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    dist() %>% 
+    vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>% 
+    vegan::scores() %>%
+    as_tibble(., rownames = "sample") %>% 
+    left_join(sample_metadata, by = "sample") %>%
+      group_by(environment) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = NMDS1, y = NMDS2, color = environment)) +
+      geom_point(size = 4) +
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9, show.legend = FALSE) +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    panel.background = element_blank(),
+    axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right", legend.box = "vertical"
+    ) +
+    labs(color="Altitude", shape="River")+
+    geom_text_repel(aes(label = sample), size=3)
+```
+
+### Endemic
+
+```{r gift_endemic_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    rename(trait=gift,gift=value) %>% 
+    mutate(functionid = substr(trait, 1, 3)) %>%
+    mutate(trait = case_when(
+      trait %in% GIFT_db$Code_element ~ GIFT_db$Element[match(trait, GIFT_db$Code_element)],
+      TRUE ~ trait
+    )) %>%
+    mutate(functionid = case_when(
+      functionid %in% GIFT_db$Code_function ~ GIFT_db$Function[match(functionid, GIFT_db$Code_function)],
+      TRUE ~ functionid
+    )) %>%
+    mutate(trait=factor(trait,levels=unique(GIFT_db$Element))) %>%
+    mutate(functionid=factor(functionid,levels=unique(GIFT_db$Function))) %>%
+    ggplot(aes(x=sample,y=trait,fill=gift)) +
+        geom_tile(colour="white", linewidth=0.2)+
+        scale_fill_gradientn(colours=rev(c("#d53e4f", "#f46d43", "#fdae61", "#fee08b", "#e6f598", "#abdda4", "#ddf1da")))+
+        facet_grid(functionid ~ environment, scales="free",space="free") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+              axis.text.y = element_text(size=8),
+              strip.text.y = element_text(angle = 0)
+              ) +
+        labs(y="Traits",x="Samples",fill="GIFT")
+```
+```{r gift_endemic_mci_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    ggplot(aes(x=sample,y=mci)) +
+        geom_col() +
+        facet_grid(. ~ environment, scales="free",space="free")+
+        theme_minimal()
+```
+
+```{r gift_endemic_mci_boxplot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    ggplot(aes(x=environment,y=mci, group=environment)) +
+        geom_boxplot() +
+        ylim(0,0.5) +
+        theme_minimal()
+```
+
+```{r gift_endemic_mci_test_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    wilcox.test(mci ~ environment,.)
+```
+
+```{r gift_endemic_test_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    group_by(gift) %>%
+    summarise(high=mean(value[environment == "high"], na.rm = TRUE),
+              low=mean(value[environment == "low"], na.rm = TRUE),
+              p_value = wilcox.test(value ~ environment)$p.value
+              ) %>%
+    mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
+    filter(p_adjust < 0.05) %>% 
+    tt()
+```
+
+```{r gift_endemic_test_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_endemic_significance <- GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    group_by(gift) %>%
+    summarise(high=mean(value[environment == "high"], na.rm = TRUE),
+              low=mean(value[environment == "low"], na.rm = TRUE),
+              p_value = wilcox.test(value ~ environment)$p.value
+              ) %>%
+    mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
+    mutate(difference=high-low) %>%
+    mutate(significance = case_when(
+      p_adjust <= 0.05 ~ "significant",
+      p_adjust > 0.05 ~ "non-significant")) 
+
+GIFTs_community_endemic_significance %>% 
+      filter(significance == "significant") %>% 
+      tt()
+
+GIFTs_community_endemic_significance %>% 
+    ggplot(aes(y=forcats::fct_rev(factor(gift)),x=difference, fill=significance)) +
+      scale_fill_manual(values=c("#cccccc","#444444"))+
+      geom_col() + 
+      xlim(-0.25,0.25) +
+      theme_minimal()
+```
+
+```{r gift_endemic_permanova_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+community_endemic_dist <- GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    dist()
+  
+adonis2(community_endemic_dist ~ environment * river,
+        by="terms", 
+        data = sample_metadata %>%
+                filter(sample %in% labels(community_endemic_dist)) %>% 
+                arrange(match(sample,labels(community_endemic_dist))), 
+        permutations = 999) %>%
+        broom::tidy() %>%
+        tt()
+```
+
+```{r gift_endemic_pcoa_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+pcoa_endemic <- GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    vegdist(method="euclidean") %>%
+    pcoa()
+
+pcoa_endemic_rel_eigen <- pcoa_endemic$values$Relative_eig[1:10]
+
+pcoa_endemic_vectors <- pcoa_endemic$vectors %>% #extract vectors
+  as.data.frame() %>% 
+  select(Axis.1,Axis.2)
+
+pcoa_endemic_eigenvalues <- pcoa_endemic$values$Eigenvalues[c(1,2)]
+
+pcoa_endemic_traits <- cov(GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample"), scale(pcoa_endemic_vectors)) %*% diag((pcoa_endemic_eigenvalues/(nrow(GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample"))-1))^(-0.5)) %>%
+  as.data.frame() %>% 
+  rename(Axis.1=1,Axis.2=2) %>% 
+  rownames_to_column(var="label") %>% 
+  #get function summary vectors
+  mutate(func=substr(label,1,3)) %>% 
+  group_by(func) %>% 
+  summarise(Axis.1=mean(Axis.1),
+            Axis.2=mean(Axis.2)) %>% 
+  rename(label=func) %>% 
+  filter(!label %in% c("S01","S02","S03"))
+
+scale <- 15 # scale for vector loadings
+pcoa_endemic_vectors %>% 
+  rownames_to_column(var="sample") %>% 
+  left_join(sample_metadata, by="sample") %>%
+  ggplot() +
+      #genome positions
+      geom_point(aes(x=Axis.1,y=Axis.2, color=environment), 
+                 alpha=0.9, shape=16) +
+      #scale_color_manual(values=phylum_colors) +
+      scale_size_continuous(range = c(0.1,5)) +
+      #loading positions
+      geom_segment(data=pcoa_endemic_traits, 
+                   aes(x=0, y=0, xend=Axis.1 * scale, yend=Axis.2 * scale),
+                    arrow = arrow(length = unit(0.3, "cm"), 
+                    type = "open", 
+                    angle = 25),
+                    linewidth = 0.5, 
+                    color = "black") +
+     #Primary and secondary scale adjustments
+     scale_x_continuous(name = paste0("PCoA1 (",round(pcoa_endemic_rel_eigen[1]*100, digits = 2), " %)"),
+                      sec.axis = sec_axis(~ . / scale, name = "Loadings on PCoA1")
+            ) +
+     scale_y_continuous(name = paste0("PCoA2 (",round(pcoa_endemic_rel_eigen[2]*100, digits = 2), " %)"),
+                      sec.axis = sec_axis(~ . / scale, name = "Loadings on PCoA2")
+            ) +
+    geom_label_repel(data = pcoa_endemic_traits,
+                     aes(label = label, x = Axis.1 * scale, y = Axis.2 * scale),
+                     segment.color = 'transparent') +
+    theme_minimal() 
+```
+
+```{r gift_endemic_ordination_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_endemic %>%
+    filter(sample!="EHI02625") %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    dist() %>% 
+    vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>% 
+    vegan::scores() %>%
+    as_tibble(., rownames = "sample") %>% 
+    left_join(sample_metadata, by = "sample") %>%
+      group_by(environment) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = NMDS1, y = NMDS2, color = environment)) +
+      geom_point(size = 4) +
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9, show.legend = FALSE) +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    panel.background = element_blank(),
+    axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right", legend.box = "vertical"
+    ) +
+    labs(color="Altitude", shape="River")+
+    geom_text_repel(aes(label = sample), size=3)
+```
+
+### Marginal
+
+```{r gift_marginal_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    rename(trait=gift,gift=value) %>% 
+    mutate(functionid = substr(trait, 1, 3)) %>%
+    mutate(trait = case_when(
+      trait %in% GIFT_db$Code_element ~ GIFT_db$Element[match(trait, GIFT_db$Code_element)],
+      TRUE ~ trait
+    )) %>%
+    mutate(functionid = case_when(
+      functionid %in% GIFT_db$Code_function ~ GIFT_db$Function[match(functionid, GIFT_db$Code_function)],
+      TRUE ~ functionid
+    )) %>%
+    mutate(trait=factor(trait,levels=unique(GIFT_db$Element))) %>%
+    mutate(functionid=factor(functionid,levels=unique(GIFT_db$Function))) %>%
+    ggplot(aes(x=sample,y=trait,fill=gift)) +
+        geom_tile(colour="white", linewidth=0.2)+
+        scale_fill_gradientn(colours=rev(c("#d53e4f", "#f46d43", "#fdae61", "#fee08b", "#e6f598", "#abdda4", "#ddf1da")))+
+        facet_grid(functionid ~ environment, scales="free",space="free") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+              axis.text.y = element_text(size=8),
+              strip.text.y = element_text(angle = 0)
+              ) +
+        labs(y="Traits",x="Samples",fill="GIFT")
+```
+```{r gift_marginal_mci_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    ggplot(aes(x=sample,y=mci)) +
+        geom_col() +
+        ylim(0,0.5) +
+        facet_grid(. ~ environment, scales="free",space="free")+
+        theme_minimal()
+```
+
+```{r gift_marginal_mci_boxplot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>%
+    ggplot(aes(x=environment,y=mci, group=environment)) +
+        geom_boxplot() +
+        ylim(0,0.5) +
+        theme_minimal()
+```
+```{r gift_marginal_mci_test_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    group_by(sample) %>% 
+    summarise(mci=mean(value,na.rm=TRUE)) %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    wilcox.test(mci ~ environment,.)
+```
+
+
+```{r gift_marginal_test_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    group_by(gift) %>%
+    summarise(high=mean(value[environment == "high"], na.rm = TRUE),
+              low=mean(value[environment == "low"], na.rm = TRUE),
+              p_value = wilcox.test(value ~ environment)$p.value
+              ) %>%
+    mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
+    filter(p_adjust < 0.05)
+```
+
+```{r gift_marginal_test_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_community_marginal_significance <- GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    left_join(sample_metadata, by = "sample") %>% 
+    group_by(gift) %>%
+    summarise(high=mean(value[environment == "high"], na.rm = TRUE),
+              low=mean(value[environment == "low"], na.rm = TRUE),
+              p_value = wilcox.test(value ~ environment)$p.value
+              ) %>%
+    mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
+    mutate(difference=high-low) %>%
+    mutate(significance = case_when(
+      p_adjust <= 0.05 ~ "significant",
+      p_adjust > 0.05 ~ "non-significant")) 
+
+GIFTs_community_marginal_significance %>% 
+      filter(significance == "significant") %>% 
+      tt()
+
+GIFTs_community_marginal_significance %>% 
+    ggplot(aes(y=forcats::fct_rev(factor(gift)),x=difference, fill=significance)) +
+      scale_fill_manual(values=c("#cccccc","#444444"))+
+      geom_col() + 
+      xlim(-0.25,0.25) +
+      theme_minimal()
+```
+
+```{r gift_marginal_permanova_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+community_marginal_dist <- GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    filter(!is.na(value)) %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    dist()
+  
+adonis2(community_marginal_dist ~ environment * river,
+        by="terms", 
+        data = sample_metadata %>%
+                filter(sample %in% labels(community_marginal_dist)) %>% 
+                arrange(match(sample,labels(community_marginal_dist))), 
+        permutations = 999) %>%
+        broom::tidy() %>%
+        tt()
+```
+
+```{r gift_marginal_pcoa_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+pcoa_marginal <- GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    filter(!is.na(value)) %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    vegdist(method="euclidean") %>%
+    pcoa()
+
+pcoa_marginal_rel_eigen <- pcoa_marginal$values$Relative_eig[1:10]
+
+pcoa_marginal_vectors <- pcoa_marginal$vectors %>% #extract vectors
+  as.data.frame() %>% 
+  select(Axis.1,Axis.2)
+
+pcoa_marginal_eigenvalues <- pcoa_marginal$values$Eigenvalues[c(1,2)]
+
+pcoa_marginal_traits <- cov(GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% filter(!is.na(value)) %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample"), scale(pcoa_marginal_vectors)) %*% diag((pcoa_marginal_eigenvalues/(nrow(GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% filter(!is.na(value)) %>%  
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample"))-1))^(-0.5)) %>%
+  as.data.frame() %>% 
+  rename(Axis.1=1,Axis.2=2) %>% 
+  rownames_to_column(var="label") %>% 
+  #get function summary vectors
+  mutate(func=substr(label,1,3)) %>% 
+  group_by(func) %>% 
+  summarise(Axis.1=mean(Axis.1),
+            Axis.2=mean(Axis.2)) %>% 
+  rename(label=func) %>% 
+  filter(!label %in% c("S01","S02","S03"))
+
+scale <- 15 # scale for vector loadings
+pcoa_marginal_vectors %>% 
+  rownames_to_column(var="sample") %>% 
+  left_join(sample_metadata, by="sample") %>%
+  ggplot() +
+      #genome positions
+      geom_point(aes(x=Axis.1,y=Axis.2, color=environment), 
+                 alpha=0.9, shape=16) +
+      #scale_color_manual(values=phylum_colors) +
+      scale_size_continuous(range = c(0.1,5)) +
+      #loading positions
+      geom_segment(data=pcoa_marginal_traits, 
+                   aes(x=0, y=0, xend=Axis.1 * scale, yend=Axis.2 * scale),
+                    arrow = arrow(length = unit(0.3, "cm"), 
+                    type = "open", 
+                    angle = 25),
+                    linewidth = 0.5, 
+                    color = "black") +
+     #Primary and secondary scale adjustments
+     scale_x_continuous(name = paste0("PCoA1 (",round(pcoa_marginal_rel_eigen[1]*100, digits = 2), " %)"),
+                      sec.axis = sec_axis(~ . / scale, name = "Loadings on PCoA1")
+            ) +
+     scale_y_continuous(name = paste0("PCoA2 (",round(pcoa_marginal_rel_eigen[2]*100, digits = 2), " %)"),
+                      sec.axis = sec_axis(~ . / scale, name = "Loadings on PCoA2")
+            ) +
+    geom_label_repel(data = pcoa_marginal_traits,
+                     aes(label = label, x = Axis.1 * scale, y = Axis.2 * scale),
+                     segment.color = 'transparent') +
+    theme_minimal() + 
+    theme(legend.position = "none")
+```
+
+```{r gift_marginal_ordination_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+
+GIFTs_community_marginal %>%
+    filter(sample!="EHI02625") %>% 
+    filter(!is.na(value)) %>% 
+    pivot_wider(names_from="gift",values_from="value") %>% 
+    column_to_rownames(var="sample") %>%
+    dist() %>% 
+    vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>% 
+    vegan::scores() %>%
+    as_tibble(., rownames = "sample") %>% 
+    left_join(sample_metadata, by = "sample") %>%
+      group_by(environment) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = NMDS1, y = NMDS2, color = environment)) +
+      geom_point(size = 4) +
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9, show.legend = FALSE) +
+  theme(
+    axis.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10),
+    panel.background = element_blank(),
+    axis.line = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 12),
+    legend.position = "right", legend.box = "vertical"
+    ) +
+    labs(color="Altitude", shape="River")+
+    geom_text_repel(aes(label = sample), size=3)
+```
