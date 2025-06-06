@@ -60,7 +60,7 @@ predicted-genes-1
 number-of-annotated-genes-and-percentages-1
 number-of-kegg-annotatated-genes-and-percentages-1
 functional-ordination-1
-combined-ordination
+functionality-differences
 community-composition
 gut-microbiota-2
 taxonomy-overview-2
@@ -107,7 +107,10 @@ community-elements-differences-1
 community-functions-differences-1
 community-domains-differences-1
 source-of-functional-differences
+genome-size
 taxonomic-variation
+functional-differences-between-fractions
+functional-differences-between-high-and-low-endemisms
 mags-in-different-locations-and-shared-among-locations
 core
 endemic
@@ -119,8 +122,14 @@ endemic-1
 marginal-1
 source-of-functional-differences-1
 taxonomic-variation-1
+genome-size-1
+functional-differences-between-high-and-low-endemisms-1
 mags-in-different-locations-and-shared-among-locations-1
 core-2
 endemic-2
 marginal-2
 ordination-1
+microdiversity
+single-genome-visualisation
+diet
+single-genome-visualisation-1

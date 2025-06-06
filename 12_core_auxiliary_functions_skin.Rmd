@@ -79,6 +79,7 @@ core_microbiota %>%
   summarise(count=n())
 ```
 
+
 ```{r microbiota_fractioning_plot ,comment="", echo=FALSE, message=FALSE, warning=FALSE}
 partitioning_heatmap <- core_microbiota %>% 
   select(genome,type) %>% 
@@ -106,6 +107,162 @@ genome_counts_filt %>%
   summarise(fraction=sum(count)) %>% 
   group_by(type) %>% 
   summarise(mean(fraction))
+```
+
+## Genome size
+
+```{r core_microbiota_genome_size_skin ,comment="", echo=FALSE, message=FALSE, warning=FALSE}
+core_microbiota %>% 
+  left_join(genome_metadata,by="genome") %>% 
+  group_by(type) %>% 
+  summarise(genome_size=mean(length))
+
+core_microbiota %>% 
+  left_join(genome_metadata,by="genome") %>% 
+  pairwise_wilcox_test(length ~ type, p.adjust.method = "BH")
+
+core_microbiota %>% 
+  left_join(genome_metadata,by="genome") %>% 
+  ggplot(aes(x=type,y=length,group=type)) +
+    geom_boxplot() +
+    geom_jitter()
+```
+## Functional differences between fractions
+
+```{r functional_partitioning_mci_test_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    to.functions(., GIFT_db) %>%
+    to.domains(., GIFT_db) %>%
+    as.data.frame() %>%
+    mutate(mci=(Biosynthesis+Degradation)/2) %>% 
+    rownames_to_column(var="genome") %>% 
+    select(genome,mci) %>% 
+    left_join(core_microbiota %>% select(genome,type),by="genome") %>%
+    pivot_longer(!c(genome,type),names_to = "trait",values_to = "value") %>% 
+    filter(!is.na(type)) %>%
+    ggplot(aes(x=type, y=value, group=type))+
+      geom_boxplot()+
+      facet_grid(~trait,  scales="free")
+```
+
+```{r functional_partitioning_mci_test_skin2, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    to.functions(., GIFT_db) %>%
+    to.domains(., GIFT_db) %>%
+    as.data.frame() %>%
+    mutate(mci=(Biosynthesis+Degradation)/2) %>% 
+    rownames_to_column(var="genome") %>% 
+    select(genome,mci) %>% 
+    left_join(core_microbiota %>% select(genome,type),by="genome") %>%
+    pivot_longer(!c(genome,type),names_to = "trait",values_to = "value") %>% 
+    filter(!is.na(type)) %>%
+    group_by(trait) %>%
+    pairwise_wilcox_test(value ~ type, p.adjust.method = "BH")
+```
+
+```{r functional_partitioning_function_test_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    to.functions(., GIFT_db) %>%
+    as.data.frame() %>%
+    rownames_to_column(var="genome") %>% 
+    left_join(core_microbiota %>% select(genome,type),by="genome") %>%
+    pivot_longer(!c(genome,type),names_to = "trait",values_to = "value") %>% 
+    filter(!is.na(type),
+           trait %in% c("B01","B02","B03","B04","B06","B07","B08","D01","D02","D03","D05","D06","D07","D09")) %>%
+    group_by(trait) %>%
+    pairwise_wilcox_test(value ~ type, p.adjust.method = "BH") %>% 
+    print(n=100)
+```
+
+
+```{r functional_partitioning_function_plot_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    to.functions(., GIFT_db) %>%
+    as.data.frame() %>%
+    rownames_to_column(var="genome") %>% 
+    left_join(core_microbiota %>% select(genome,type),by="genome") %>%
+    pivot_longer(!c(genome,type),names_to = "trait",values_to = "value") %>% 
+    filter(!is.na(type)) %>% 
+    ggplot(aes(x=type, y=value, group=type))+
+      geom_boxplot()+
+      facet_grid(~trait,  scales="free")
+```
+
+## Functional differences between high and low endemisms
+
+```{r endemics_mci_plot_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    to.functions(., GIFT_db) %>%
+    to.domains(., GIFT_db) %>%
+    as.data.frame() %>%
+    mutate(mci=(Biosynthesis+Degradation)/2) %>% 
+    rownames_to_column(var="genome") %>% 
+    select(genome,mci) %>% 
+    left_join(core_microbiota %>% select(genome,type_prevalence_environment, type),by="genome") %>%
+    filter(type == "endemic") %>% 
+    select(-type) %>% 
+    pivot_longer(!c(genome,type_prevalence_environment),names_to = "trait",values_to = "value") %>% 
+    filter(!is.na(type_prevalence_environment)) %>%
+    ggplot(aes(x=type_prevalence_environment, y=value, group=type_prevalence_environment))+
+      geom_boxplot()+
+      facet_grid(~trait,  scales="free")
+```
+
+```{r endemics_mci_test_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    to.functions(., GIFT_db) %>%
+    to.domains(., GIFT_db) %>%
+    as.data.frame() %>%
+    mutate(mci=(Biosynthesis+Degradation)/2) %>% 
+    rownames_to_column(var="genome") %>% 
+    select(genome,mci) %>% 
+    left_join(core_microbiota %>% select(genome,type_prevalence_environment, type),by="genome") %>%
+    filter(type == "endemic") %>% 
+    select(-type) %>% 
+    pivot_longer(!c(genome,type_prevalence_environment),names_to = "trait",values_to = "value") %>% 
+    filter(!is.na(type_prevalence_environment)) %>%
+    group_by(trait) %>%
+    pairwise_wilcox_test(value ~ type_prevalence_environment, p.adjust.method = "BH")
+```
+
+```{r endemics_function_test_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    to.functions(., GIFT_db) %>%
+    as.data.frame() %>%
+    rownames_to_column(var="genome") %>% 
+    left_join(core_microbiota %>% select(genome,type_prevalence_environment, type),by="genome") %>%
+    filter(type == "endemic") %>% 
+    select(-type) %>% 
+    pivot_longer(!c(genome,type_prevalence_environment),names_to = "trait",values_to = "value") %>% 
+    filter(!is.na(type_prevalence_environment),
+           trait %in% c("B01","B02","B03","B04","B06","B07","B08","D01","D02","D03","D05","D06","D07","D09")) %>%
+    ggplot(aes(x=type_prevalence_environment, y=value, group=type_prevalence_environment))+
+      geom_boxplot()+
+      facet_grid(~trait,  scales="free")
+```
+
+```{r functional_function_plot_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
+genome_gifts %>%
+    to.elements(., GIFT_db) %>%
+    to.functions(., GIFT_db) %>%
+    as.data.frame() %>%
+    rownames_to_column(var="genome") %>% 
+    left_join(core_microbiota %>% select(genome,type_prevalence_environment, type),by="genome") %>%
+    filter(type == "endemic") %>% 
+    select(-type) %>% 
+    pivot_longer(!c(genome,type_prevalence_environment),names_to = "trait",values_to = "value") %>% 
+    filter(!is.na(type_prevalence_environment),
+           trait %in% c("B01","B02","B03","B04","B06","B07","B08","D01","D02","D03","D05","D06","D07","D09")) %>%
+    group_by(trait) %>%
+    pairwise_wilcox_test(value ~ type_prevalence_environment, p.adjust.method = "BH") %>% 
+    print(n=100)
 ```
 
 ## MAGs in different locations and shared among locations

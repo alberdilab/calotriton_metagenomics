@@ -1,0 +1,6 @@
+genome
+EHA03355_bin.3
+EHA03360_bin.2
+EHA03363_bin.59
+EHA04492_bin.179
+EHA04492_bin.49

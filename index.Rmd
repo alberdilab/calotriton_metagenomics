@@ -85,4 +85,6 @@ library(lme4)
 library(nlme)
 library(pairwiseAdonis)
 library(emmeans)
+library(pheatmap)
+library(rstatix)
 ```

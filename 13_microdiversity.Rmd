@@ -1,0 +1,245 @@
+# Microdiversity
+
+## Single genome visualisation
+
+```{r microdiversity_core,comment="", echo=FALSE, message=FALSE, warning=FALSE}
+load("data/gut/data.Rdata")
+
+samples <- c("EHI02067","EHI02065","EHI02617","EHI01968","EHI02630","EHI02639","EHI02607","EHI02582","EHI02612","EHI02619","EHI01985","EHI01966","EHI02615","EHI02695","EHI02592","EHI02585","EHI02602","EHI02632","EHI02698","EHI02697","EHI02624","EHI02693","EHI02088","EHI01995","EHI02097","EHI01970","EHI02633","EHI02598","EHI01989","EHI02079","EHI02696","EHI01967","EHI01992","EHI02105","EHI01979","EHI01982","EHI02625","EHI02603","EHI02584","EHI02587","EHI02694")
+
+ani_files <- list.files(
+  path      = "data/microdiversity/core",
+  pattern   = "_population_ani\\.tsv$",
+  full.names= TRUE
+) %>%
+  set_names(basename(.) %>% str_remove("_population_ani\\.tsv$"))
+
+ani_list <- lapply(ani_files, function(file) {
+  read_tsv(file,comment = "#") %>% 
+  mutate(SampleID=samples) %>% 
+  column_to_rownames(var="SampleID") %>% 
+  set_names(samples) %>%
+  select(where(~ !all(is.na(.)))) %>%
+  drop_na()
+}) %>%
+  setNames(names(ani_files))
+
+ani_pairwise <- ani_list %>%
+  imap_dfr(~ {
+    mat    <- .x
+    genome <- .y
+    as.data.frame(mat) %>%
+      rownames_to_column("sample.x") %>%
+      pivot_longer(-sample.x,
+                   names_to  = "sample.y",
+                   values_to = "distance") %>%
+      filter(sample.x < sample.y) %>%
+      mutate(genome = genome) %>%
+      select(genome, sample.x, sample.y, distance)
+  })
+
+ani_environments <- ani_pairwise %>% 
+  filter(sample.x != sample.y) %>% 
+  inner_join(sample_metadata %>% select(sample,environment), by=join_by("sample.x"=="sample")) %>% 
+  inner_join(sample_metadata %>% select(sample,environment), by=join_by("sample.y"=="sample")) %>% 
+  mutate(environment=case_when(
+            environment.x == "low" & environment.y == "high" ~ "different",
+            environment.x == "high" & environment.y == "low" ~ "different",
+            environment.x == "low" & environment.y == "low" ~ "low",
+            environment.x == "high" & environment.y == "high" ~ "high",
+            .default = NA)) %>% 
+  group_by(genome, environment) %>% 
+  summarise(mean=mean(distance),sd=sd(distance))
+
+ani_environments %>% 
+  ggplot(aes(x=environment,y=mean,group=environment)) +
+    geom_boxplot(outlier.shape = NA) + 
+    geom_jitter() +
+    theme_minimal()
+
+ani_pairwise %>% 
+  filter(sample.x != sample.y) %>% 
+  inner_join(sample_metadata %>% select(sample,environment), by=join_by("sample.x"=="sample")) %>% 
+  inner_join(sample_metadata %>% select(sample,environment), by=join_by("sample.y"=="sample")) %>% 
+  mutate(environment=case_when(
+            environment.x == "low" & environment.y == "high" ~ "different",
+            environment.x == "high" & environment.y == "low" ~ "different",
+            environment.x == "low" & environment.y == "low" ~ "low",
+            environment.x == "high" & environment.y == "high" ~ "high",
+            .default = NA)) %>% 
+  pairwise_wilcox_test(distance ~ environment, p.adjust.method = "BH")
+
+
+ani_pairwise %>% 
+  group_by(sample.x,sample.y) %>% 
+  summarise(distance=mean(distance)) %>% 
+  filter(sample.x %in% sample_metadata$sample,
+         sample.y %in% sample_metadata$sample) %>% 
+  pivot_wider(
+      names_from  = sample.y,
+      values_from = distance
+    ) %>%
+  column_to_rownames(var = "sample.x") %>%
+  as.matrix() %>%
+  pheatmap(
+  .,
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
+  clustering_method = "ward",
+  display_numbers = FALSE,
+  legend = TRUE,
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  color = colorRampPalette(c("navy","#fbffe0"))(100),
+  annotation_col = origin,
+  annotation_row = origin,
+  main = "Clustered ANI Heatmap"
+)
+  
+  
+```
+
+```{r microdiversity_endemics,comment="", echo=FALSE, message=FALSE, warning=FALSE}
+load("data/gut/data.Rdata")
+
+samples <- c("EHI02067","EHI02065","EHI02617","EHI01968","EHI02630","EHI02639","EHI02607","EHI02582","EHI02612","EHI02619","EHI01985","EHI01966","EHI02615","EHI02695","EHI02592","EHI02585","EHI02602","EHI02632","EHI02698","EHI02697","EHI02624","EHI02693","EHI02088","EHI01995","EHI02097","EHI01970","EHI02633","EHI02598","EHI01989","EHI02079","EHI02696","EHI01967","EHI01992","EHI02105","EHI01979","EHI01982","EHI02625","EHI02603","EHI02584","EHI02587","EHI02694")
+
+# Low environment
+
+ani_files <- list.files(
+  path      = "data/microdiversity/low",
+  pattern   = "_population_ani\\.tsv$",
+  full.names= TRUE
+) %>%
+  set_names(basename(.) %>% str_remove("_population_ani\\.tsv$"))
+
+ani_list <- lapply(ani_files, function(file) {
+  read_tsv(file,comment = "#") %>% 
+  mutate(SampleID=samples) %>% 
+  column_to_rownames(var="SampleID") %>% 
+  set_names(samples) %>%
+  select(where(~ !all(is.na(.)))) %>%
+  drop_na()
+}) %>%
+  setNames(names(ani_files))
+
+ani_pairwise <- ani_list %>%
+  imap_dfr(~ {
+    mat    <- .x
+    genome <- .y
+    as.data.frame(mat) %>%
+      rownames_to_column("sample.x") %>%
+      pivot_longer(-sample.x,
+                   names_to  = "sample.y",
+                   values_to = "distance") %>%
+      filter(sample.x < sample.y) %>%
+      mutate(genome = genome) %>%
+      select(genome, sample.x, sample.y, distance)
+  })
+
+ani_low <- ani_pairwise %>% 
+  filter(sample.x != sample.y) %>%
+  inner_join(sample_metadata %>% select(sample,environment), by=join_by("sample.x"=="sample")) %>% 
+  inner_join(sample_metadata %>% select(sample,environment), by=join_by("sample.y"=="sample")) %>%
+  filter(environment.x == "low",
+         environment.y == "low")
+
+# High environment
+
+ani_files <- list.files(
+  path      = "data/microdiversity/high",
+  pattern   = "_population_ani\\.tsv$",
+  full.names= TRUE
+) %>%
+  set_names(basename(.) %>% str_remove("_population_ani\\.tsv$"))
+
+ani_list <- lapply(ani_files, function(file) {
+  read_tsv(file,comment = "#") %>% 
+  mutate(SampleID=samples) %>% 
+  column_to_rownames(var="SampleID") %>% 
+  set_names(samples) %>%
+  select(where(~ !all(is.na(.)))) %>%
+  drop_na()
+}) %>%
+  setNames(names(ani_files))
+
+ani_pairwise <- ani_list %>%
+  imap_dfr(~ {
+    mat    <- .x
+    genome <- .y
+    as.data.frame(mat) %>%
+      rownames_to_column("sample.x") %>%
+      pivot_longer(-sample.x,
+                   names_to  = "sample.y",
+                   values_to = "distance") %>%
+      filter(sample.x < sample.y) %>%
+      mutate(genome = genome) %>%
+      select(genome, sample.x, sample.y, distance)
+  })
+
+ani_high <- ani_pairwise %>% 
+  filter(sample.x != sample.y) %>%
+  inner_join(sample_metadata %>% select(sample,environment), by=join_by("sample.x"=="sample")) %>% 
+  inner_join(sample_metadata %>% select(sample,environment), by=join_by("sample.y"=="sample")) %>%
+  filter(environment.x == "high",
+         environment.y == "high")
+
+# Comparison
+
+bind_rows(ani_low,ani_high) %>% 
+  group_by(environment.x) %>% 
+  summarise(ani=mean(distance))
+
+bind_rows(ani_low,ani_high) %>% 
+    pairwise_wilcox_test(distance ~ environment.x, p.adjust.method = "BH")
+
+bind_rows(ani_low,ani_high) %>% 
+  ggplot(aes(x=environment.x,y=distance,group=environment.x)) +
+    geom_boxplot(outlier.shape = NA) + 
+    geom_jitter() +
+    theme_minimal()
+
+```
+
+```{r microdiversity_single_sample,comment="", echo=FALSE, message=FALSE, warning=FALSE}
+load("data/gut/data.Rdata")
+
+samples <- c("EHI02067","EHI02065","EHI02617","EHI01968","EHI02630","EHI02639","EHI02607","EHI02582","EHI02612","EHI02619","EHI01985","EHI01966","EHI02615","EHI02695","EHI02592","EHI02585","EHI02602","EHI02632","EHI02698","EHI02697","EHI02624","EHI02693","EHI02088","EHI01995","EHI02097","EHI01970","EHI02633","EHI02598","EHI01989","EHI02079","EHI02696","EHI01967","EHI01992","EHI02105","EHI01979","EHI01982","EHI02625","EHI02603","EHI02584","EHI02587","EHI02694")
+
+ani <- read_tsv("data/microdiversity/core/EHA04468_bin.89_population_ani.tsv",comment = "#")  %>% 
+  mutate(SampleID=samples) %>% 
+  column_to_rownames(var="SampleID") %>% 
+  set_names(samples) %>%
+  select(where(~ !all(is.na(.)))) %>%
+  drop_na()
+
+ani <- ani[sample_metadata$sample,sample_metadata$sample]
+
+# Compute a distance matrix (so that high ANI = low distance)
+dist_ani <- as.dist(1 - ani)
+
+# Hierarchical clustering (you can change method to "complete", "ward.D2", etc.)
+hc <- hclust(dist_ani, method = "average")
+ordered_idx <- hc$order
+ani_ord <- ani[ordered_idx, ordered_idx]
+
+origin <- sample_metadata %>% 
+  filter(sample %in% colnames(ani)) %>% 
+  select(sample,environment,river) %>% 
+  column_to_rownames(var="sample")
+
+pheatmap(
+  ani,
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
+  clustering_method = "ward",
+  display_numbers = FALSE,
+  legend = TRUE,
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  color = colorRampPalette(c("navy","#fbffe0"))(100),
+  annotation_col = origin,
+  annotation_row = origin,
+  main = "Clustered ANI Heatmap"
+)
+```
