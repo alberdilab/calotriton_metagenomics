@@ -1,7 +1,5 @@
 # Diet
 
-## Single genome visualisation
-
 ```{r load_diet, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 load("data/gut/data.Rdata")
 diet <- read_tsv("data/diet/calotriton.tsv")
@@ -9,15 +7,15 @@ diet <- read_tsv("data/diet/calotriton.tsv")
 
 ```{r filter_diet, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 target_taxon <- "k__Animalia;p__Chordata;c__Amphibia;o__Caudata;f__Salamandridae;g__Calotriton;s__Calotriton_asper"
-target_row <- diet %>% filter(Taxonomy == target)
+target_row <- diet %>% filter(Taxonomy == target_taxon)
 
-parts <- str_split(target, ";")[[1]]
-parents <- map_chr(1:3, ~ paste(parts[1:.x], collapse = ";"))
+parts <- str_split(target_taxon, ";")[[1]]
+parents <- map_chr(1:(length(parts) - 1), ~ paste(parts[1:.x], collapse = ";"))
 samples <- colnames(diet)[-1]
 
 diet2 <- diet %>%
   mutate(across(all_of(samples), ~ if_else(Taxonomy %in% parents, . - target_row[[cur_column()]], .))) %>%
-  filter(Taxonomy != target)
+  filter(Taxonomy != target_taxon)
 ```
 
 ```{r diet_class_diversity, comment="", echo=FALSE, message=FALSE, warning=FALSE}
@@ -44,9 +42,11 @@ class_diversity <- diet2 %>%
   filter(!is.na(environment))
 
 class_diversity %>% 
-  ggplot(aes(x=environment,y=q1, group=environment, color=environment))+ 
-    geom_boxplot() + 
-    geom_jitter() + 
+  ggplot(aes(x=environment,y=q1,group=environment, color=environment, fill=environment)) +
+    geom_jitter(alpha=0.8, width=0.3) +
+    geom_boxplot(outlier.shape = NA) + 
+    scale_color_manual(values=c("#429ef5","#f56042"))+
+    scale_fill_manual(values=c("#429ef570","#f5604270")) +
     theme_minimal()
 
 class_diversity %>% 
@@ -77,11 +77,29 @@ order_diversity <- diet2 %>%
   filter(!is.na(environment))
 
 order_diversity %>% 
-  ggplot(aes(x=environment,y=q1, group=environment, color=environment))+ 
-    geom_boxplot() + 
-    geom_jitter() + 
+  ggplot(aes(x=environment,y=q1,group=environment, color=environment, fill=environment)) +
+    geom_jitter(alpha=0.8, width=0.3) +
+    geom_boxplot(outlier.shape = NA) + 
+    scale_color_manual(values=c("#429ef5","#f56042"))+
+    scale_fill_manual(values=c("#429ef570","#f5604270")) +
     theme_minimal()
 
 order_diversity %>% 
   wilcox.test(q1 ~ environment, data = ., exact = FALSE)
+```
+
+```{r diet_order_composition, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+diet2 %>% 
+  filter(str_detect(Taxonomy, "^k__[^;]*;p__[^;]*;c__[^;]*;o__[^;]*$")) %>% 
+  mutate_at(vars(-Taxonomy),~./sum(.)) %>%
+  separate(Taxonomy, c("domain","phylum","class","order"),  sep =";") %>%
+  pivot_longer(-c(domain,phylum,class,order),names_to = "sample",values_to = "count") %>% 
+  left_join(sample_metadata,by="sample") %>% 
+  filter(!is.na(environment)) %>% 
+  ggplot(aes(x=sample,y=count, fill=phylum, group=phylum)) + 
+    geom_bar(stat="identity", colour="white", linewidth=0.1) + 
+    scale_fill_manual(values=c("#e376e1","#40a832","#e36495","#d9d2bf","#32ed96","#98bf82","#e38a64","#e36464")) +
+    facet_nested(~factor(environment, labels=c("low" = "Low altitude", "high" = "High altitude")),  scales="free") + 
+    guides(fill = guide_legend(ncol = 1)) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 ```

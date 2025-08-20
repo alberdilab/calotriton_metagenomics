@@ -1,4 +1,4 @@
-# Source of functional differences
+## Skin microbiome
 
 ```{r functional_difference_source_load,comment="", echo=FALSE, message=FALSE, warning=FALSE}
 load("data/skin/data.Rdata")
@@ -93,7 +93,7 @@ partitioning_tree <- force.ultrametric(genome_tree, method="extend") %>%
 function_tree <- gheatmap(partitioning_tree, partitioning_heatmap, offset=0, width=0.1, colnames=FALSE)
 ```
 
-## Taxonomic variation
+### Taxonomic variation
 
 ```{r relative_abundance_distribution, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
 genome_counts_filt %>%
@@ -109,7 +109,7 @@ genome_counts_filt %>%
   summarise(mean(fraction))
 ```
 
-## Genome size
+### Genome size
 
 ```{r core_microbiota_genome_size_skin ,comment="", echo=FALSE, message=FALSE, warning=FALSE}
 core_microbiota %>% 
@@ -127,7 +127,7 @@ core_microbiota %>%
     geom_boxplot() +
     geom_jitter()
 ```
-## Functional differences between fractions
+### Functional differences between fractions
 
 ```{r functional_partitioning_mci_test_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
 genome_gifts %>%
@@ -192,7 +192,7 @@ genome_gifts %>%
       facet_grid(~trait,  scales="free")
 ```
 
-## Functional differences between high and low endemisms
+### Functional differences between high and low endemisms
 
 ```{r endemics_mci_plot_skin, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
 genome_gifts %>%
@@ -265,7 +265,7 @@ genome_gifts %>%
     print(n=100)
 ```
 
-## MAGs in different locations and shared among locations
+### MAGs in different locations and shared among locations
 
 ```{r chart1, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 locationcolors=c('#c4d7d1','#408892','#2d3749','#c04062','#6b3a59','#e08683')
@@ -298,7 +298,7 @@ upset(as.data.frame(table_upset_analysis),
 ```
 
 
-### Core
+#### Core
 
 ```{r core_taxonomy_barplot, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
 genome_counts_filt %>%
@@ -327,7 +327,7 @@ genome_counts_filt %>%
    labs(fill="Phylum",y = "Relative abundance",x="Samples")
 ```
 
-### Endemic
+#### Endemic
 
 ```{r endemic_taxonomy_barplot, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
 genome_counts_filt %>%
@@ -357,7 +357,7 @@ genome_counts_filt %>%
    labs(fill="Phylum",y = "Relative abundance",x="Samples")
 ```
 
-### Marginal
+#### Marginal
 
 ```{r marginal_taxonomy_barplot, fig.height=6, fig.width=10, fig.fullwidth=TRUE}
 genome_counts_filt %>%
@@ -387,7 +387,7 @@ genome_counts_filt %>%
    labs(fill="Phylum",y = "Relative abundance",x="Samples")
 ```
 
-### Ordination
+#### Ordination
 
 ```{r pcoa_ordination, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
 gift_pcoa <- genome_gifts %>%
@@ -789,6 +789,7 @@ GIFTs_community_endemic %>%
               ) +
         labs(y="Traits",x="Samples",fill="GIFT")
 ```
+
 ```{r giftendemic_mci_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 GIFTs_community_endemic %>%
     filter(sample!="EHI02625") %>% 
@@ -988,6 +989,7 @@ GIFTs_community_marginal %>%
               ) +
         labs(y="Traits",x="Samples",fill="GIFT")
 ```
+
 ```{r gift_marginal_mci_plot, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 GIFTs_community_marginal %>%
     filter(sample!="EHI02625") %>% 

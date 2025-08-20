@@ -2,7 +2,7 @@
 title: "AlberdiLab | Aizpurua et al. 2025"
 subtitle: "Endemic bacteria outside the core microbiome drive functional differences across salamander populations"
 author:
-  - Ostaizka Aizpurua^[University of Copenhagen, ostaizka.aizpurua@sund.ku.dk], Carlos Cabido^[Aranzadi Science Society], Garazi Martin Bideguren^[University of Copenhagen, garazi.bideguren@sund.ku.dk], Antton Alberdi^[University of Copenhagen, antton.alberdi@sund.ku.dk]
+  - Ostaizka Aizpurua^[University of Copenhagen, ostaizka.aizpurua@sund.ku.dk], Elsa Brenner ^[University of Copenhagen], Garazi Martin Bideguren^[University of Copenhagen, garazi.bideguren@sund.ku.dk], Ion Garin^[Aranzadi Science Society], Carlos Cabido^[Aranzadi Science Society], Antton Alberdi^[University of Copenhagen, antton.alberdi@sund.ku.dk]
 date: "Last update: `r Sys.Date()`"
 site: bookdown::bookdown_site
 documentclass: book

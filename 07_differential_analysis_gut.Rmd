@@ -1,6 +1,8 @@
-# Gut microbiota: Differential abundance analysis
+# Differential abundance analysis
 
-```{r load_data_mag_filtdamr_diffe_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+## Gut microbiota
+
+```{r load_data_mag_filtdamr_diffe_gut, comment="", message=FALSE, warning=FALSE}
 load("data/gut/data.Rdata")
 sample_metadata <- sample_metadata %>%
   filter(sample!="EHI02625")
@@ -10,7 +12,7 @@ genome_counts_filt <- genome_counts_filt %>%
   select_if(~!all(. == 0))
 ```
 
-```{r phyloseq_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+```{r phyloseq_gut, comment="", message=FALSE, warning=FALSE}
 #Phyloseq object
 count_phy <- genome_counts_filt %>%
   column_to_rownames(var="genome")%>%
@@ -31,7 +33,7 @@ physeq_all = phyloseq(count_phy, TAX, sample_info_tab_phy, tree)
 ```
 
 
-```{r ancombc_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+```{r ancombc_gut, comment="", message=FALSE, warning=FALSE}
 set.seed(1234) #set seed for reproducibility
 ancom_mag_gut = ancombc2(data = physeq_all, 
                   assay_name = "counts", 
@@ -60,7 +62,7 @@ ancom_mag_gut = ancombc2(data = physeq_all,
 
 ```
 
-```{r ancom_rand1_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+```{r ancom_rand1_gut, comment="", message=FALSE, warning=FALSE}
 taxonomy <- data.frame(physeq_all@tax_table) %>%
   rownames_to_column(., "taxon")%>%
   mutate_at(vars(order, phylum, family, genus, species), ~ str_replace(., "[dpcofgs]__", ""))
@@ -91,7 +93,7 @@ tax_color <- merge(tax_table, colors_alphabetic, by="phylum")%>%
 	pull()
 ```
 
-```{r ancombc_rand_plot_mag_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=10, fig.width=8, fig.fullwidth=TRUE}
+```{r ancombc_rand_plot_mag_gut, comment="", message=FALSE, warning=FALSE, fig.height=10, fig.width=8, fig.fullwidth=TRUE}
 ancom_mag_gut_table %>%
       mutate(genome=factor(genome,levels=ancom_mag_gut_table$genome)) %>%
 ggplot(aes(x=lfc_environmentlow, y=forcats::fct_reorder(genome,lfc_environmentlow), fill=phylum)) + #forcats::fct_rev()
@@ -112,7 +114,7 @@ ggplot(aes(x=lfc_environmentlow, y=forcats::fct_reorder(genome,lfc_environmentlo
   guides(fill=guide_legend(title="Phylum"))
 ```
 
-```{r ancom_rand_volcano_mag_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+```{r ancom_rand_volcano_mag_gut, comment="", message=FALSE, warning=FALSE}
 phylum_colors <- read_tsv("https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv") %>%
     right_join(genome_metadata, by=join_by(phylum == phylum)) %>%
     arrange(match(genome, genome_tree$tip.label)) %>%

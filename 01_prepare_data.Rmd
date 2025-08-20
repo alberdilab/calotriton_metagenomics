@@ -1,17 +1,21 @@
 # Prepare data
 
-## Load gut data
+## Gut microbiota
+
+### Load data
 
 Load the original data files outputted by the bioinformatic pipeline.
 
-### Reads
-```{r load_reads_gut, warning=FALSE, comments="", message=FALSE}
+#### Reads
+
+```{r load_reads_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 read_counts <- read_tsv("data/gut/DMB0156_counts.tsv.gz") %>%
     rename(genome=1)
 ```
 
-### Sample metadata
-```{r load_sample_metadata_gut, warning=FALSE, comments="", message=FALSE}
+#### Sample metadata
+
+```{r load_sample_metadata_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 sample_metadata <- read_csv("data/sample_metadata.csv") %>%
   select("EHI_number","capture_id_flat","sample_type", "sex", "latitude", "longitude","singlem_fraction","reads_post_fastp","metagenomic_bases","host_bases", "bases_lost_fastp_percent_flat") %>%
     rename(sample=1) %>%
@@ -33,27 +37,27 @@ sample_metadata <- read_csv("data/sample_metadata.csv") %>%
 ```
 
 
-### Filter read counts
+#### Filter read counts
 
-```{r load_read_counts_gut, warning=FALSE, comments="", message=FALSE}
+```{r load_read_counts_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 read_counts <- read_counts %>%
   filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
   select_if(~!all(. == 0))%>%
     select(one_of(c("genome",sample_metadata$sample)))
 ```
 
-### Genome taxonomy
+#### Genome taxonomy
 
-```{r load_genome_metadata_gut, warning=FALSE, comments="", message=FALSE}
+```{r load_genome_metadata_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_metadata <- read_tsv("data/gut/DMB0156_mag_info.tsv.gz") %>%
     rename(length=mag_size)%>%
   semi_join(., read_counts, by = "genome") %>%
   arrange(match(genome,read_counts$genome))
 ```
 
-### Genome base hits
+#### Genome base hits
 
-```{r load_genome_hits_gut, warning=FALSE, comments="", message=FALSE}
+```{r load_genome_hits_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_coverage <- read_tsv("data/gut/DMB0156_coverage.tsv.gz") %>%
     rename(genome=1) %>%
     select(one_of(c("genome",sample_metadata$sample)))%>%
@@ -62,15 +66,15 @@ genome_coverage <- read_tsv("data/gut/DMB0156_coverage.tsv.gz") %>%
 ```
 
 
-### Genome tree
+#### Genome tree
 
-```{r load_genome_tree_gut, warning=FALSE, comments="", message=FALSE}
+```{r load_genome_tree_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_tree <- read_tree("data/gut/DMB0156.tree")
 genome_tree$tip.label <- str_replace_all(genome_tree$tip.label,"'", "") #remove single quotes in MAG names
 genome_tree <- keep.tip(genome_tree, tip=genome_metadata$genome) # keep only MAG tips
 ```
 
-### Genome annotations
+#### Genome annotations
 
 Downloading individual annotation files from ERDA using information in Airtable and writing them to a single compressed table takes a while. The following chunk only needs to be run once, to generate the ***genome_annotations*** table that is saved in the data directory. Note that the airtable connection requires a personal access token.
 
@@ -86,50 +90,50 @@ airtable("MAGs", "appWbHBNLE6iAsMRV") %>% #get base ID from Airtable browser URL
   write_tsv(file="data/gut/genome_annotations.tsv.xz") #write to overall compressed file
 ```
 
-```{r load_genome_annotations_gut, warning=FALSE, comments="", message=FALSE}
+```{r load_genome_annotations_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_annotations <- read_tsv("data/gut/genome_annotations.tsv.xz") %>%
     rename(gene=1, genome=2, contig=3)
 ```
 
-## Create working objects
+### Create working objects
 
 Transform the original data files into working objects for downstream analyses.
 
-### Filter reads by coverage
+#### Filter reads by coverage
 
-```{r filter_coverage_gut, warning=FALSE, comments="", message=FALSE}
+```{r filter_coverage_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 min_coverage=0.3
 read_counts_filt <- genome_coverage %>%
   mutate(across(where(is.numeric), ~ ifelse(. > min_coverage, 1, 0))) %>%
   mutate(across(-1, ~ . * read_counts[[cur_column()]]))
 ```
 
-### Transform reads into genome counts
+#### Transform reads into genome counts
 
-```{r calculate_genome_counts_unfiltered_gut, warning=FALSE, comments="", message=FALSE}
+```{r calculate_genome_counts_unfiltered_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 readlength=150
 genome_counts <- read_counts %>%
   mutate(across(where(is.numeric), ~ . / (genome_metadata$length / readlength) ))
 ```
 
-```{r calculate_genome_counts_filtered_gut, warning=FALSE, comments="", message=FALSE}
+```{r calculate_genome_counts_filtered_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 readlength=150
 genome_counts_filt <- read_counts_filt %>%
   mutate(across(where(is.numeric), ~ . / (genome_metadata$length / readlength) ))
 ```
 
-### Distill annotations into GIFTs
+#### Distill annotations into GIFTs
 
-```{r distill_annotations_gut, warning=FALSE, comments="", message=FALSE}
+```{r distill_annotations_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_gifts <- distill(genome_annotations,GIFT_db,genomecol=2,annotcol=c(9,10,19), verbosity=F)
 genome_gifts <- genome_gifts[, !grepl("^S", colnames(genome_gifts))]
 ```
 
-## Prepare color scheme
+### Prepare color scheme
 
 [AlberdiLab](www.alberdilab.dk) projects use unified color schemes developed for the [Earth Hologenome Initiative](www.earthhologenome.org), to facilitate figure interpretation.
 
-```{r get_ehi_colors_gut, warning=FALSE, comments="", message=FALSE}
+```{r get_ehi_colors_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 phylum_colors <- read_tsv("https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv") %>%
     right_join(genome_metadata, by=join_by(phylum == phylum)) %>%
     arrange(match(genome, genome_tree$tip.label)) %>%
@@ -139,16 +143,16 @@ phylum_colors <- read_tsv("https://raw.githubusercontent.com/earthhologenome/EHI
     pull(colors, name=phylum)
 ```
 
-```{r get_colors_gut, warning=FALSE, comments="", message=FALSE}
+```{r get_colors_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 altitude_colors<- c("#429ef5","#a8c3f0","#f56c42","#f29c80")
 treatment_colors <- c("#429ef5","#f56042")
 ```
 
-## Wrap working objects
+### Wrap working objects
 
 All working objects are wrapped into a single Rdata object to facilitate downstream usage.
 
-```{r wrap_working_objects_gut, warning=FALSE, comments="", message=FALSE}
+```{r wrap_working_objects_gut, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 save(sample_metadata,
      genome_metadata,
      read_counts,
@@ -162,18 +166,22 @@ save(sample_metadata,
      file = "data/gut/data.Rdata")
 ```
 
-## Load skin data
+## Skin microbiome
+
+### Load skin data
 
 Load the original data files outputted by the bioinformatic pipeline.
 
-### Reads
-```{r load_reads_skin, warning=FALSE, comments="", message=FALSE}
+#### Reads
+
+```{r load_reads_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 read_counts <- read_tsv("data/skin/DMB0171_counts.tsv.gz") %>%
     rename(genome=1)
 ```
 
-### Sample metadata
-```{r load_sample_metadata_skin, warning=FALSE, comments="", message=FALSE}
+#### Sample metadata
+
+```{r load_sample_metadata_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 sample_metadata <- read_csv("data/sample_metadata.csv") %>%
   select("EHI_number","capture_id_flat","sample_type", "sex", "latitude", "longitude","singlem_fraction","reads_post_fastp","metagenomic_bases","host_bases", "bases_lost_fastp_percent_flat") %>%
   rename(sample=1) %>%
@@ -195,29 +203,25 @@ sample_metadata <- read_csv("data/sample_metadata.csv") %>%
   select(, -sample_type, -latitude, -longitude)
 ```
 
-```{r}
-#  filter(!sample %in% c("EHI02973", "EHI02983", "EHI02978", "EHI02987", "EHI02976", "EHI02988", ))%>%
-```
+#### Read counts arrange
 
-### Read counts arrange
-
-```{r load_read_counts_skin, warning=FALSE, comments="", message=FALSE}
+```{r load_read_counts_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 read_counts <- read_counts %>%
     select(one_of(c("genome",sample_metadata$sample)))
 ```
 
-### Genome taxonomy
+#### Genome taxonomy
 
-```{r load_genome_metadata_skin, warning=FALSE, comments="", message=FALSE}
+```{r load_genome_metadata_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_metadata <- read_tsv("data/skin/DMB0171_mag_info.tsv.gz") %>%
   rename(length=mag_size)%>%
   semi_join(., read_counts, by = "genome") %>%
   arrange(match(genome,read_counts$genome))
 ```
 
-### Genome base hits
+#### Genome base hits
 
-```{r load_genome_hits_skin, warning=FALSE, comments="", message=FALSE}
+```{r load_genome_hits_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_coverage <- read_tsv("data/skin/DMB0171_coverage.tsv.gz") %>%
   rename(genome=1) %>%
   select(one_of(c("genome",sample_metadata$sample)))%>%
@@ -225,15 +229,15 @@ genome_coverage <- read_tsv("data/skin/DMB0171_coverage.tsv.gz") %>%
   arrange(match(genome, read_counts$genome))
 ```
 
-### Genome tree
+#### Genome tree
 
-```{r load_genome_tree_skin, warning=FALSE, comments="", message=FALSE}
+```{r load_genome_tree_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_tree <- read_tree("data/skin/DMB0171.tree")
 genome_tree$tip.label <- str_replace_all(genome_tree$tip.label,"'", "") #remove single quotes in MAG names
 genome_tree <- keep.tip(genome_tree, tip=genome_metadata$genome) # keep only MAG tips
 ```
 
-### Genome annotations
+#### Genome annotations
 
 Downloading individual annotation files from ERDA using information in Airtable and writing them to a single compressed table takes a while. The following chunk only needs to be run once, to generate the ***genome_annotations*** table that is saved in the data directory. Note that the airtable connection requires a personal access token.
 
@@ -249,55 +253,55 @@ airtable("MAGs", "appWbHBNLE6iAsMRV") %>% #get base ID from Airtable browser URL
   write_tsv(file="data/skin/genome_annotations.tsv.xz") #write to overall compressed file
 ```
 
-```{r load_genome_annotations_skin, warning=FALSE, comments="", message=FALSE}
+```{r load_genome_annotations_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_annotations <- read_tsv("data/skin/genome_annotations.tsv.xz") %>%
     rename(gene=1, genome=2, contig=3)
 ```
 
-## Create working objects
+### Create working objects
 
 Transform the original data files into working objects for downstream analyses.
 
-### Filter reads by coverage
+#### Filter reads by coverage
 
-```{r filter_coverage_skin, warning=FALSE, comments="", message=FALSE}
+```{r filter_coverage_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 min_coverage=0.3
 read_counts_filt <- genome_coverage %>%
   mutate(across(where(is.numeric), ~ ifelse(. > min_coverage, 1, 0))) %>%
   mutate(across(-1, ~ . * read_counts[[cur_column()]]))
 ```
 
-### Transform reads into genome counts
+#### Transform reads into genome counts
 
-```{r calculate_genome_counts_unfiltered_skin, warning=FALSE, comments="", message=FALSE}
+```{r calculate_genome_counts_unfiltered_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 readlength=150
 genome_counts <- read_counts %>%
   mutate(across(where(is.numeric), ~ . / (genome_metadata$length / readlength) ))
 ```
 
-```{r calculate_genome_counts_filtered_skin, warning=FALSE, comments="", message=FALSE}
+```{r calculate_genome_counts_filtered_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 readlength=150
 genome_counts_filt <- read_counts_filt %>%
   mutate(across(where(is.numeric), ~ . / (genome_metadata$length / readlength) ))
 ```
 
-```{r filter_lost_samples_skin, warning=FALSE, comments="", message=FALSE}
+```{r filter_lost_samples_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 sample_metadata <- sample_metadata %>%
   filter(sample %in% colnames(genome_counts_filt))
 ```
 
-### Distill annotations into GIFTs
+#### Distill annotations into GIFTs
 
-```{r distill_annotations_skin, warning=FALSE, comments="", message=FALSE}
+```{r distill_annotations_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 genome_gifts <- distill(genome_annotations,GIFT_db,genomecol=2,annotcol=c(9,10,19), verbosity=F)
 genome_gifts <- genome_gifts[, !grepl("^S", colnames(genome_gifts))]
 ```
 
-## Prepare color scheme
+### Prepare color scheme
 
 [AlberdiLab](www.alberdilab.dk) projects use unified color schemes developed for the [Earth Hologenome Initiative](www.earthhologenome.org), to facilitate figure interpretation.
 
-```{r get_ehi_colors_skin, warning=FALSE, comments="", message=FALSE}
+```{r get_ehi_colors_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 phylum_colors <- read_tsv("https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv") %>%
     right_join(genome_metadata, by=join_by(phylum == phylum)) %>%
     arrange(match(genome, genome_tree$tip.label)) %>%
@@ -307,16 +311,16 @@ phylum_colors <- read_tsv("https://raw.githubusercontent.com/earthhologenome/EHI
     pull(colors, name=phylum)
 ```
 
-```{r get_colors_skin, warning=FALSE, comments="", message=FALSE}
+```{r get_colors_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 altitude_colors<- c("#429ef5","#a8c3f0","#f56c42","#f29c80")
 treatment_colors <- c("#429ef5","#f56042")
 ```
 
-## Wrap working objects
+### Wrap working objects
 
 All working objects are wrapped into a single Rdata object to facilitate downstream usage.
 
-```{r wrap_working_objects_skin, warning=FALSE, comments="", message=FALSE}
+```{r wrap_working_objects_skin, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 save(sample_metadata,
      genome_metadata,
      read_counts,

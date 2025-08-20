@@ -1,10 +1,10 @@
-# Skin microbiota: Differential abundance analysis
+## Skin microbiota
 
-```{r load_data_mag_filtdamr_diffe_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+```{r load_data_mag_filtdamr_diffe_skin, comment="", message=FALSE, warning=FALSE}
 load("data/skin/data.Rdata")
 ```
 
-```{r phyloseq_skin2, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+```{r phyloseq_skin2, comment="", message=FALSE, warning=FALSE}
 #Phyloseq object
 count_phy <- genome_counts_filt %>%
   column_to_rownames(var="genome")%>%
@@ -25,7 +25,7 @@ physeq_all = phyloseq(count_phy, TAX, sample_info_tab_phy, tree)
 ```
 
 
-```{r ancombc_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+```{r ancombc_skin, comment="", message=FALSE, warning=FALSE}
 set.seed(1234) #set seed for reproducibility
 ancom_mag_skin = ancombc2(data = physeq_all, 
                   assay_name = "counts", 
@@ -54,7 +54,7 @@ ancom_mag_skin = ancombc2(data = physeq_all,
 
 ```
 
-```{r ancom_rand1_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+```{r ancom_rand1_skin, comment="", message=FALSE, warning=FALSE}
 taxonomy <- data.frame(physeq_all@tax_table) %>%
   rownames_to_column(., "taxon")%>%
   mutate_at(vars(order, phylum, family, genus, species), ~ str_replace(., "[dpcofgs]__", ""))
@@ -85,7 +85,7 @@ tax_color <- merge(tax_table, colors_alphabetic, by="phylum")%>%
 	pull()
 ```
 
-```{r ancombc_rand_plot_mag_skin, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=10, fig.width=8, fig.fullwidth=TRUE}
+```{r ancombc_rand_plot_mag_skin, comment="", message=FALSE, warning=FALSE, fig.height=10, fig.width=8, fig.fullwidth=TRUE}
 ancom_mag_skin_table %>%
       mutate(genome=factor(genome,levels=ancom_mag_skin_table$genome)) %>%
 ggplot(aes(x=lfc_environmentlow, y=forcats::fct_reorder(genome,lfc_environmentlow), fill=phylum)) + #forcats::fct_rev()

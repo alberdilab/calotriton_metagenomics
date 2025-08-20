@@ -210,3 +210,46 @@ damr %>%
   summarise(mean=mean(damr),sd=sd(damr)) %>% 
   tt()
 ```
+
+## Animal metadata
+
+```{r animal_metadata, message=FALSE, warning=FALSE}
+animal_medatada <- read_csv("data/animal_metadata.csv") %>% 
+  mutate(bmi=Weight/Length^2)
+
+animal_medatada %>%
+  t.test(Length ~ Environment, data = .) %>%
+  tidy() 
+
+animal_medatada %>%
+  t.test(Weight ~ Environment, data = .) %>%
+  tidy() 
+  
+animal_medatada %>%
+  t.test(bmi ~ Environment, data = .) %>%
+  tidy() 
+```
+
+```{r animal_metadata_plot, message=FALSE, warning=FALSE}
+animal_medatada <- read_csv("data/animal_metadata.csv") %>% 
+  mutate(bmi=Weight/Length^2)
+
+animal_medatada %>%
+  ggplot(aes(x=Environment,y=Length, group=Environment)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_minimal()
+
+animal_medatada %>%
+  ggplot(aes(x=Environment,y=Weight, group=Environment)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_minimal()
+
+animal_medatada %>%
+  ggplot(aes(x=Environment,y=bmi, group=Environment)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_minimal()
+
+```

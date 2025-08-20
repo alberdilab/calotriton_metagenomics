@@ -1,5 +1,6 @@
+# Functional differences
 
-# Gut microbiota: functional analysis
+## Gut microbiota
 
 ```{r load_data_func_gut,comment="", message=FALSE, warning=FALSE}
 load("data/gut/data.Rdata")
@@ -39,7 +40,7 @@ GIFTs_functions_community <- to.community(GIFTs_functions,genome_counts_row,GIFT
 GIFTs_domains_community <- to.community(GIFTs_domains,genome_counts_row,GIFT_db)
 ```
 
-## Metabolic capacity index (MCI)
+### Metabolic capacity index (MCI)
 
 ```{r gitfs_functional_wild_gut, echo=TRUE,results=TRUE}
 GIFTs_functions_community %>%
@@ -62,6 +63,33 @@ wilcox.test(value ~ environment, data=MCI) %>%
   tidy()
 ```
 
+```{r comunity_elem_diff_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_functions_community_dist <- GIFTs_functions_community %>% 
+  dist()
+  
+adonis2(GIFTs_functions_community_dist ~ environment,
+        by="terms", 
+        data = sample_metadata %>% arrange(match(sample,labels(GIFTs_functions_community_dist))), 
+        permutations = 999)
+```
+
+```{r comunity_elem_diff_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+GIFTs_functions_community_dist %>%
+  vegan::metaMDS(., trymax = 500, k = 2, trace=0) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  dplyr::left_join(sample_metadata, by = join_by(sample == sample)) %>%
+  group_by(environment) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = NMDS1, y = NMDS2, color = environment, shape=river)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = treatment_colors) +
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.9, show.legend = FALSE) + 
+  theme_minimal()
+```
+
 ```{r gitfs_functional_wild_gut_plot, echo=TRUE,results=TRUE}
 MCI %>% 
   ggplot(aes(x=environment, y=value, color = environment, fill=environment)) +
@@ -77,7 +105,7 @@ MCI %>%
     panel.border = element_blank())
 ```
 
-```{r comumnity_elem_plot_gut, comment="", echo=FALSE, message=FALSE, warning=FALSE, fig.height=12, fig.width=10, fig.fullwidth=TRUE}
+```{r comumnity_elem_plot_gut, comment="", message=FALSE, warning=FALSE, fig.height=12, fig.width=10, fig.fullwidth=TRUE}
 GIFTs_elements_community %>%
     as.data.frame() %>%
     rownames_to_column(var="sample")%>%
@@ -160,9 +188,9 @@ GIFTs_domains_community %>%
         labs(x="Function", y="Sample",fill="GIFT")
 ```
 
-## Wilcoxon
+### Wilcoxon
 
-### Community elements differences:
+#### Community elements differences
 
 ```{r comunity_elem_gut, comment="", message=FALSE, warning=FALSE}
 element_gift <- GIFTs_elements_community %>% 
@@ -321,7 +349,7 @@ code_function %>%
   geom_text_repel(aes(label = Element), min.segment.length = 0.4, size=2.5, max.overlaps = Inf)
 ```
 
-### Community functions differences
+#### Community functions differences
 
 ```{r comunity_func_gut, comment="", message=FALSE, warning=FALSE}
 function_gift <- GIFTs_functions_community %>% 
@@ -410,7 +438,7 @@ print(plt)
 }
 ```
 
-### Community domains differences
+#### Community domains differences
 
 ```{r comunity_dom_gut, comment="", message=FALSE, warning=FALSE}
 domain_gift <- GIFTs_domains_community %>% 
