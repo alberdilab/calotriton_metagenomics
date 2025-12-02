@@ -1,0 +1,30 @@
+# Genome skimming
+
+```{r load_genome, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+load("data/skin/data.Rdata")
+depth <- read_tsv("data/genome_skimming/depth.tsv") %>% 
+  filter(depth>5000000) %>% 
+  pull(sample)
+  
+distances <- read_tsv("data/genome_skimming/distance_matrix.tsv") %>% 
+  filter(sample %in% depth) %>%
+  select(sample, all_of(depth)) %>% 
+  column_to_rownames("sample") %>% 
+  as.matrix() %>% 
+  as.dist()
+
+sample_metadata_genome <- sample_metadata %>% 
+  filter(sample %in% depth) %>% 
+  select(sample,environment) %>% 
+  arrange(match(sample, rownames(distances)))
+
+```
+
+```{r permanova, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+adonis2(
+  distances ~ environment,
+  data = sample_metadata_genome,
+  permutations = 999,
+  by = "terms"
+)
+```

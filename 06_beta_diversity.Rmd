@@ -72,7 +72,7 @@ load("data/gut/beta_EHI02625_EHI02632.Rdata")
 ```
 
 ### Permanova
-```{r permanova, comment="", message=FALSE, warning=FALSE}
+```{r permanova_richness, comment="", message=FALSE, warning=FALSE}
 #Richness
 betadisper(beta_q0n$S, sample_metadata$environment) %>% permutest(.) 
 adonis2(beta_q0n$S ~ environment+river,
